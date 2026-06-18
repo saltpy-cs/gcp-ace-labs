@@ -486,9 +486,10 @@ Intentionally break it — provide malformed JSON to see what happens:
 gcloud storage buckets update $BUCKET --lifecycle-file=bad-lifecycle.json
 ```
 
-**Expected output (error):**
+**Expected output (error — exact message may vary by SDK version):**
 ```
-ERROR: (gcloud.storage.buckets.update) HTTPError 400: Invalid argument. Lifecycle condition must not be empty.
+ERROR: Task failed: GcsApiError('')
+  Completed 0
 ```
 
 An empty condition would delete all objects immediately — GCS rejects this to prevent accidents. This is a good example of a guard rail in the API.
