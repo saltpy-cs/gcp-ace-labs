@@ -527,15 +527,15 @@ gcloud compute machine-types list \
 Expected output (first 20 rows):
 
 ```
-NAME           GUEST_CPUS  MEMORY_MB
-c2-standard-16 16          65536
-c2-standard-30 30          122880
-c2-standard-4  4           16384
-c2-standard-60 60          245760
-c2-standard-8  8           32768
-e2-highcpu-16  16          16384
-e2-highcpu-2   2           2048
-e2-highcpu-32  32          32768
+NAME            CPUS  MEMORY_GB
+c2-standard-16  16    64.00
+c2-standard-30  30    120.00
+c2-standard-4   4     16.00
+c2-standard-60  60    240.00
+c2-standard-8   8     32.00
+e2-highcpu-16   16    16.00
+e2-highcpu-2    2     2.00
+e2-highcpu-32   32    32.00
 ...
 ```
 
