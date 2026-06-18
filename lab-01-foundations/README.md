@@ -258,9 +258,7 @@ gcloud compute instances add-tags my-vm \
 
 ### Prerequisites
 
-1. A Google account (personal Gmail or Google Workspace)
-2. `gcloud` CLI installed: https://cloud.google.com/sdk/docs/install
-3. A billing account (free trial is sufficient — this lab creates no billable resources)
+Complete the **GCP Project Setup** section in the [root README](../README.md) before starting this lab. That setup creates your course-wide project, links billing, and enables all core APIs — you do not need to repeat those steps here.
 
 ### Verify your gcloud installation
 
@@ -279,21 +277,6 @@ gsutil 5.29
 ```
 
 The version numbers will differ — what matters is that the command runs without error.
-
-### Check your billing account ID (you will need it in Exercise 2)
-
-```bash
-gcloud billing accounts list
-```
-
-Expected output:
-
-```
-ACCOUNT_ID            NAME                OPEN  MASTER_ACCOUNT_ID
-01ABCD-EF2345-678901  My Billing Account  True
-```
-
-Note your `ACCOUNT_ID` — you will use it as `$BILLING_ACCOUNT` in Exercise 2.
 
 ---
 
@@ -351,34 +334,17 @@ You should see the beginning of a long token string. If you see an error like `C
 
 ---
 
-### Exercise 2 — Create a GCP Project
+> **What you already did in course setup:** You created a project, linked a billing account, and enabled all course APIs — run the commands below to inspect that state and understand what each step did.
 
-A project is the fundamental container for all GCP resources. It has a human-readable name, a unique ID, and a numeric project number.
+### Exercise 2 — Inspect Your Project and Billing
 
-```bash
-# Project IDs must be globally unique across all of GCP, 6-30 characters,
-# lowercase letters, digits, and hyphens only, must start with a letter.
-# We use a timestamp suffix to make it unique.
-PROJECT_ID="ace-lab01-$(date +%Y%m%d%H%M)"
-
-echo "Project ID will be: $PROJECT_ID"
-```
+The course setup created your project. Let's examine the three identifiers GCP assigns to every project.
 
 ```bash
-# Create the project
-gcloud projects create $PROJECT_ID \
-  --name="ACE Lab 01 Foundations"
-```
+# Load the project from your active gcloud config
+PROJECT_ID=$(gcloud config get-value project)
 
-Expected output:
-
-```
-Create in progress for [https://cloudresourcemanager.googleapis.com/v1/projects/ace-lab01-202406171030].
-Waiting for [operations/cp.12345678901234567890] to finish...done.
-```
-
-```bash
-# Verify it exists
+# Describe the project — note the three distinct identifiers
 gcloud projects describe $PROJECT_ID
 ```
 
@@ -387,43 +353,22 @@ Expected output:
 ```
 createTime: '2024-06-17T10:30:00.000Z'
 lifecycleState: ACTIVE
-name: ACE Lab 01 Foundations
-projectId: ace-lab01-202406171030
+name: GCP ACE Labs (yourname)
+projectId: gcp-ace-yourname
 projectNumber: '123456789012'
 ```
 
-Note the three identifiers:
+The three identifiers:
 
-- **Project ID** (`ace-lab01-202406171030`) — you chose this; globally unique; immutable after creation
-- **Project name** (`ACE Lab 01 Foundations`) — human-readable; not unique; changeable
+- **Project ID** (`gcp-ace-yourname`) — you chose this; globally unique; immutable after creation
+- **Project name** (`GCP ACE Labs (yourname)`) — human-readable; not unique; changeable
 - **Project number** (`123456789012`) — assigned by GCP; numeric; immutable; used in some API URLs
 
 > **ACE Exam Tip:** The project **ID** and project **number** are both permanent and cannot be changed. The project **name** can be changed. Some GCP APIs refer to projects by number in their URLs even when you specify by ID.
 
----
-
-### Exercise 3 — Link a Billing Account
-
-A project without a linked billing account cannot enable paid APIs or create paid resources. Even free-tier resources require a billing account to be attached.
-
 ```bash
-# List available billing accounts
-gcloud billing accounts list
-```
-
-```bash
-# Store your billing account ID
-BILLING_ACCOUNT=$(gcloud billing accounts list --format="value(name)" --limit=1)
-# name is returned as "billingAccounts/01ABCD-EF2345-678901" so extract the ID:
-BILLING_ACCOUNT_ID=$(echo $BILLING_ACCOUNT | cut -d'/' -f2)
-
-echo "Using billing account: $BILLING_ACCOUNT_ID"
-```
-
-```bash
-# Link the billing account to your project
-gcloud billing projects link $PROJECT_ID \
-  --billing-account=$BILLING_ACCOUNT_ID
+# Confirm billing is linked
+gcloud billing projects describe $PROJECT_ID
 ```
 
 Expected output:
@@ -431,101 +376,24 @@ Expected output:
 ```
 billingAccountName: billingAccounts/01ABCD-EF2345-678901
 billingEnabled: true
-name: projects/ace-lab01-202406171030/billingInfo
-projectId: ace-lab01-202406171030
-```
-
-```bash
-# Verify billing is enabled
-gcloud billing projects describe $PROJECT_ID
-```
-
-**What happens if billing is not linked?** Attempting to enable most APIs will fail with:
-
-```
-ERROR: (gcloud.services.enable) FAILED_PRECONDITION: Billing account for project
-'ace-lab01-...' is not found. Billing must be enabled for activation of service
-'compute.googleapis.com'.
+name: projects/gcp-ace-yourname/billingInfo
+projectId: gcp-ace-yourname
 ```
 
 > **ACE Exam Tip:** The exam may ask what prevents a user from creating a VM even though they have the `roles/compute.admin` role. A common answer: **billing is not enabled on the project**.
 
 ---
 
-### Exercise 4 — Enable APIs
+### Exercise 3 — Inspect Enabled APIs
 
-Set your project context, then enable the APIs you will use throughout this course.
-
-```bash
-# Point gcloud at your new project
-gcloud config set project $PROJECT_ID
-```
-
-Expected output:
-
-```
-Updated property [core/project].
-```
+The course setup enabled all APIs you will need. Let's see what that looks like and understand what would happen without it.
 
 ```bash
-# Check what is currently enabled (should be very few on a brand-new project)
+# List currently enabled APIs
 gcloud services list --enabled
 ```
 
-Expected output on a new project (approximately):
-
-```
-NAME                              TITLE
-bigquery.googleapis.com           BigQuery API
-bigquerymigration.googleapis.com  BigQuery Migration API
-bigquerystorage.googleapis.com    BigQuery Storage API
-cloudapis.googleapis.com          Google Cloud APIs
-clouddebugger.googleapis.com      Cloud Debugger API
-cloudtrace.googleapis.com         Cloud Trace API
-datastore.googleapis.com          Cloud Datastore API
-logging.googleapis.com            Cloud Logging API
-monitoring.googleapis.com         Cloud Monitoring API
-servicemanagement.googleapis.com  Service Management API
-serviceusage.googleapis.com       Service Usage API
-sql-component.googleapis.com      Cloud SQL
-storage-api.googleapis.com        Google Cloud Storage JSON API
-storage-component.googleapis.com  Cloud Storage
-storage.googleapis.com            Cloud Storage API
-```
-
-```bash
-# Enable the APIs you will need across all labs in this course
-gcloud services enable \
-  compute.googleapis.com \
-  container.googleapis.com \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com \
-  secretmanager.googleapis.com \
-  cloudkms.googleapis.com \
-  sqladmin.googleapis.com \
-  redis.googleapis.com \
-  monitoring.googleapis.com \
-  logging.googleapis.com
-```
-
-This will take 30–60 seconds. Expected output:
-
-```
-Operation "operations/acf.p2-123456789012-abcdef12-..." finished successfully.
-```
-
-```bash
-# Verify compute is now enabled
-gcloud services list --enabled --filter="name:compute.googleapis.com"
-```
-
-Expected output:
-
-```
-NAME                      TITLE
-compute.googleapis.com    Compute Engine API
-```
+You should see ~20 APIs including `compute.googleapis.com`, `container.googleapis.com`, `run.googleapis.com`, and others enabled during course setup.
 
 **Deliberately break it** — see what happens when an API is not enabled:
 
@@ -541,7 +409,7 @@ Expected error:
 
 ```
 ERROR: (gcloud.compute.instances.list) PERMISSION_DENIED: Compute Engine API has not
-been used in project ace-lab01-... before or it is disabled. Enable it by visiting
+been used in project gcp-ace-... before or it is disabled. Enable it by visiting
 https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=...
 ```
 
@@ -552,7 +420,7 @@ gcloud services enable compute.googleapis.com
 
 ---
 
-### Exercise 5 — Configure gcloud Defaults
+### Exercise 4 — Configure gcloud Defaults
 
 Rather than passing `--project`, `--region`, and `--zone` to every command, set them as defaults in your configuration.
 
@@ -581,7 +449,7 @@ region = europe-west2
 zone = europe-west2-a
 [core]
 account = your-email@gmail.com
-project = ace-lab01-202406171030
+project = gcp-ace-yourname
 
 Your active configuration is: [default]
 ```
@@ -606,7 +474,7 @@ echo "Zone    : $ZONE"
 
 ---
 
-### Exercise 6 — Explore Regions and Zones
+### Exercise 5 — Explore Regions and Zones
 
 Before choosing a region for your workloads, understand what is available and what each region offers.
 
@@ -689,7 +557,7 @@ pd-standard           europe-west2-a  10GB-65536GB
 
 ---
 
-### Exercise 7 — Create and Switch Between Named Configurations
+### Exercise 6 — Create and Switch Between Named Configurations
 
 Configurations let you maintain separate contexts for different projects, accounts, or environments without re-running `gcloud config set` every time you switch.
 
@@ -702,7 +570,7 @@ Expected output:
 
 ```
 NAME     IS_ACTIVE  ACCOUNT                   PROJECT                    COMPUTE_DEFAULT_ZONE  COMPUTE_DEFAULT_REGION
-default  True       your-email@gmail.com      ace-lab01-202406171030     europe-west2-a        europe-west2
+default  True       your-email@gmail.com      gcp-ace-yourname           europe-west2-a        europe-west2
 ```
 
 ```bash
@@ -782,7 +650,7 @@ gcloud config configurations activate default
 
 ---
 
-### Exercise 8 — Explore the Resource Hierarchy and IAM Preview
+### Exercise 7 — Explore the Resource Hierarchy and IAM Preview
 
 Explore how the resource hierarchy works from the CLI, and get a preview of IAM bindings that will be covered in depth in Lab 04.
 
@@ -800,7 +668,7 @@ Expected output:
 
 ```
 PROJECT_ID               NAME                  PROJECT_NUMBER
-ace-lab01-202406171030   ACE Lab 01 Foundations  123456789012
+gcp-ace-yourname         GCP ACE Labs (yourname)  123456789012
 ```
 
 ```bash
@@ -897,37 +765,10 @@ gcloud projects list --filter="labels.course=ace"
 
 ## Cleanup
 
-This lab created no billable resources, but you should delete the project to keep your account tidy and avoid any future accidental charges if you later enable paid services.
+This lab created no billable resources and does not delete the course project (it is shared across all labs). The only thing to clean up is the `prod-environment` named configuration created in Exercise 6.
 
 ```bash
-# Confirm which project you are deleting
-PROJECT_ID=$(gcloud config get-value project)
-echo "About to delete: $PROJECT_ID"
-```
-
-```bash
-# Delete the project (this schedules it for deletion in 30 days — it can be undeleted within that window)
-gcloud projects delete $PROJECT_ID
-```
-
-Expected output:
-
-```
-Your project will be deleted after 30 days.
-Do you want to continue (Y/n)? Y
-
-Deleted [https://cloudresourcemanager.googleapis.com/v1/projects/ace-lab01-202406171030].
-```
-
-```bash
-# Reset your default configuration to no project
-gcloud config unset project
-gcloud config unset compute/region
-gcloud config unset compute/zone
-```
-
-```bash
-# Delete the prod-environment configuration created in Exercise 7
+# Delete the prod-environment configuration created in Exercise 6
 gcloud config configurations delete prod-environment
 ```
 
@@ -942,13 +783,7 @@ Deleted [prod-environment].
 ```
 
 ```bash
-# Verify cleanup
+# Verify the default configuration is still active and pointing at your course project
 gcloud config configurations list
-gcloud projects list
-```
-
-The project will no longer appear in `gcloud projects list` immediately after deletion. If you need to recover it within 30 days, use the Cloud Console under IAM & Admin → Manage Resources → Deleted projects, or run:
-
-```bash
-gcloud projects undelete $PROJECT_ID
+gcloud config get-value project
 ```
