@@ -243,7 +243,7 @@ gcloud compute instances create lab02-web \
 
 - `--image-family=debian-12` — use the latest image in the `debian-12` family. GCP updates family pointers when new images are published, so this is more durable than pinning a specific image name.
 - `--image-project=debian-cloud` — images are stored in separate projects. `debian-cloud` is Google-managed. Other useful image projects: `ubuntu-os-cloud`, `cos-cloud` (Container-Optimised OS), `windows-cloud`.
-- `--tags=http-server` — network tags used by firewall rules. The default VPC includes a rule allowing port 80 to instances tagged `http-server`.
+- `--tags=http-server` — network tags used by firewall rules. A firewall rule targeting this tag must exist in your project for traffic to reach the instance (Exercise 3 covers this).
 - `--metadata=enable-oslogin=true` — use IAM-based SSH instead of metadata keys.
 
 Expected output:
@@ -336,6 +336,23 @@ Delete the existing instance and recreate it with a startup script. This demonst
 ```bash
 gcloud compute instances delete lab02-web --zone=$ZONE --quiet
 ```
+
+The instance will use the `http-server` tag to receive web traffic. That tag only works if a matching firewall rule exists in your project. Check whether it is already present:
+
+```bash
+gcloud compute firewall-rules list --filter="name=default-allow-http" --format="table(name,direction,allowed,targetTags)"
+```
+
+If the rule is missing (empty output), create it:
+
+```bash
+gcloud compute firewall-rules create default-allow-http \
+  --allow=tcp:80 \
+  --target-tags=http-server \
+  --description="Allow HTTP from anywhere"
+```
+
+> **Why tags?** A firewall rule with `--target-tags=http-server` only applies to instances that have that tag. This means you can have many VMs in the same network but only the ones you explicitly tag receive HTTP traffic — a simple form of network segmentation.
 
 The startup script is in this lab's directory (`startup.sh`). Make sure you are in that directory, then create the instance:
 
@@ -896,6 +913,10 @@ gcloud compute images delete lab02-nginx-image --quiet
 
 # Delete the snapshot
 gcloud compute snapshots delete lab02-web-snap-01 --quiet
+
+# Delete the firewall rule if you created it in Exercise 3
+# (skip this if default-allow-http already existed in your project)
+gcloud compute firewall-rules delete default-allow-http --quiet
 
 # Verify nothing remains
 echo "=== Remaining instances ==="
