@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 <url>"
+  echo "Example: $0 \"https://storage.googleapis.com/my-bucket/index.html\""
+  exit 1
+fi
+
 URL=$1
 TIMEOUT=120
 ELAPSED=0
