@@ -989,7 +989,7 @@ gcloud storage rm -r gs://${PROJECT_ID}-finegrained-lab
 
 # Verify all lab buckets are gone
 gcloud storage buckets list --filter="name~${PROJECT_ID}-.*-lab"
-# Expected output: (empty — no buckets listed)
+# Expected output: Listed 0 items.
 
 # Clean up local files
 rm -f $LAB_DIR/*
