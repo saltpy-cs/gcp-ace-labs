@@ -384,7 +384,7 @@ gcloud compute instances create lab02-web \
 The startup script runs `apt-get update` and installs nginx, which takes 2–4 minutes on an e2-micro. Run the verification script — it polls until nginx responds or times out after 5 minutes:
 
 ```bash
-bash verify-nginx.sh
+./verify-nginx.sh
 ```
 
 Expected output (zone will match your configured zone):
@@ -526,7 +526,7 @@ gcloud compute instances create lab02-from-image \
 Verify nginx is already running (no startup script needed):
 
 ```bash
-bash verify-nginx.sh lab02-from-image
+./verify-nginx.sh lab02-from-image
 ```
 
 Expected output:
