@@ -348,8 +348,8 @@ BUCKET=gs://${PROJECT_ID}-standard-lab
 gcloud storage buckets update $BUCKET --versioning
 
 # Verify versioning is enabled
-gcloud storage buckets describe $BUCKET --format="value(versioning.enabled)"
-# Expected output: True
+gcloud storage buckets describe $BUCKET --format="json" | jq .versioning
+# Expected output: { "enabled": true }
 ```
 
 Create an object, overwrite it twice, and inspect the version history:
