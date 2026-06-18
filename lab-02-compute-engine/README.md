@@ -626,7 +626,11 @@ echo "UUID=$DISK_UUID /mnt/data ext4 discard,defaults,nofail 0 2" | \
 # Reload systemd so it picks up the updated fstab, then verify
 sudo systemctl daemon-reload
 sudo findmnt --verify
+```
 
+`findmnt --verify` produces no output when everything is clean, or prints `0 parse errors, 0 errors, 0 warnings`. Any warnings or errors indicate a problem with the fstab entry.
+
+```bash
 # Write a test file
 echo "lab02 data disk test" | sudo tee /mnt/data/test.txt > /dev/null
 cat /mnt/data/test.txt
@@ -634,7 +638,6 @@ cat /mnt/data/test.txt
 
 Expected output:
 ```
-0 parse errors, 0 errors, 0 warnings
 lab02 data disk test
 ```
 
