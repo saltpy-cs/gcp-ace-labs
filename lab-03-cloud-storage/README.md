@@ -992,7 +992,7 @@ gcloud storage buckets list --filter="name~${PROJECT_ID}-.*-lab"
 # Expected output: Listed 0 items.
 
 # Clean up local files
-rm -rf $LAB_DIR/*
+find $LAB_DIR -mindepth 1 -not -name '.gitkeep' -delete
 ```
 
 **Expected output per bucket deletion:**
