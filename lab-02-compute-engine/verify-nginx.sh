@@ -12,7 +12,7 @@ EXTERNAL_IP=$(gcloud compute instances describe "$INSTANCE" \
 
 echo "External IP: $EXTERNAL_IP"
 
-until curl -sf --max-time 3 "http://$EXTERNAL_IP" > /dev/null; do
+until curl -sf --max-time 3 "http://$EXTERNAL_IP" | grep -q "$INSTANCE"; do
   if [ $ELAPSED -ge $TIMEOUT ]; then
     echo "Timed out after ${TIMEOUT}s. Checking serial port output for startup script errors:"
     gcloud compute instances get-serial-port-output "$INSTANCE" --zone=$ZONE | tail -30
