@@ -337,34 +337,7 @@ Delete the existing instance and recreate it with a startup script. This demonst
 gcloud compute instances delete lab02-web --zone=$ZONE --quiet
 ```
 
-Create the startup script as a local file:
-
-```bash
-cat > /tmp/startup.sh << 'EOF'
-#!/bin/bash
-set -euxo pipefail
-
-apt-get update -y
-apt-get install -y nginx
-
-# Write a custom index page that identifies this instance
-INSTANCE_NAME=$(curl -sf -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/name)
-ZONE=$(curl -sf -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/zone | awk -F/ '{print $NF}')
-
-cat > /var/www/html/index.html << HTML
-<html><body>
-<h1>Hello from $INSTANCE_NAME in $ZONE</h1>
-</body></html>
-HTML
-
-systemctl enable nginx
-systemctl start nginx
-EOF
-```
-
-Create the instance passing the script file:
+The startup script is in this lab's directory (`startup.sh`). Create the instance passing it directly:
 
 ```bash
 gcloud compute instances create lab02-web \
@@ -376,7 +349,7 @@ gcloud compute instances create lab02-web \
   --boot-disk-type=pd-balanced \
   --tags=http-server \
   --metadata=enable-oslogin=true \
-  --metadata-from-file=startup-script=/tmp/startup.sh
+  --metadata-from-file=startup-script=startup.sh
 ```
 
 Wait for the startup script to complete (about 60–90 seconds), then get the external IP and test:
