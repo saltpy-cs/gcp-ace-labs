@@ -987,9 +987,8 @@ gcloud storage rm -r gs://${PROJECT_ID}-coldline-lab
 gcloud storage rm -r gs://${PROJECT_ID}-public-lab
 gcloud storage rm -r gs://${PROJECT_ID}-finegrained-lab
 
-# Verify all lab buckets are gone
-gcloud storage buckets list --filter="name~${PROJECT_ID}-.*-lab"
-# Expected output: Listed 0 items.
+# Verify nothing remains
+./status.sh
 
 # Clean up local files
 find $LAB_DIR -mindepth 1 -not -name '.gitkeep' -delete
