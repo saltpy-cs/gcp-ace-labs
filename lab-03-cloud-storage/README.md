@@ -641,19 +641,18 @@ gcloud storage buckets remove-iam-policy-binding $PUBLIC_BUCKET \
   --role=roles/storage.objectViewer
 ```
 
-Verify the lock down by attempting public access again:
+Verify the lock down — IAM changes can take up to 60 seconds to propagate, so this script polls until access is denied:
 
 ```bash
-curl -s "https://storage.googleapis.com/${PROJECT_ID}-public-lab/index.html"
+./verify-denied.sh "https://storage.googleapis.com/${PROJECT_ID}-public-lab/index.html"
 ```
 
 **Expected output:**
-```xml
-<Error>
-  <Code>AccessDenied</Code>
-  <Message>Access denied.</Message>
-  ...
-</Error>
+```
+Waiting for access to be denied on: https://storage.googleapis.com/...
+Still accessible... (0s elapsed)
+...
+Access denied (403) confirmed.
 ```
 
 > **ACE exam tip**: Enabling `allUsers` as `objectViewer` is a common misconfiguration that exposes sensitive data. GCP's **Public Access Prevention** setting at the organization or bucket level overrides any IAM policy that would grant `allUsers` or `allAuthenticatedUsers` access. In a real environment, enable Public Access Prevention at the organization policy level (`constraints/storage.publicAccessPrevention`).
