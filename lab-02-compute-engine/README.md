@@ -343,14 +343,25 @@ The instance will use the `http-server` tag to receive web traffic. That tag onl
 gcloud compute firewall-rules list --filter="name=default-allow-http" --format="table(name,direction,allowed,targetTags)"
 ```
 
-If the rule is missing (empty output), create it:
+If the rule is missing (empty output), create it scoped to your current public IP:
 
 ```bash
+MY_IP=$(curl -s https://checkip.amazonaws.com)
+echo "Allowing HTTP from: $MY_IP"
+
 gcloud compute firewall-rules create default-allow-http \
   --allow=tcp:80 \
   --target-tags=http-server \
-  --description="Allow HTTP from anywhere"
+  --source-ranges="${MY_IP}/32" \
+  --description="Allow HTTP from my IP only"
 ```
+
+> If your IP changes (e.g. you switch networks), update the rule:
+> ```bash
+> MY_IP=$(curl -s https://checkip.amazonaws.com)
+> gcloud compute firewall-rules update default-allow-http \
+>   --source-ranges="${MY_IP}/32"
+> ```
 
 > **Why tags?** A firewall rule with `--target-tags=http-server` only applies to instances that have that tag. This means you can have many VMs in the same network but only the ones you explicitly tag receive HTTP traffic — a simple form of network segmentation.
 
