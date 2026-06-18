@@ -209,6 +209,16 @@ MY_IP=$(curl -s https://checkip.amazonaws.com)
 echo "Project: $PROJECT_ID  Zone: $ZONE  My IP: $MY_IP"
 ```
 
+Grant yourself the `serviceAccountUser` role on the Compute Engine default service account. This is required to modify metadata (including startup scripts) on instances that run as a service account:
+
+```bash
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+gcloud iam service-accounts add-iam-policy-binding \
+  ${PROJECT_NUMBER}-compute@developer.gserviceaccount.com \
+  --member="user:$(gcloud config get-value account)" \
+  --role="roles/iam.serviceAccountUser"
+```
+
 Enable the Compute Engine API if you have not already:
 
 ```bash
