@@ -873,9 +873,19 @@ gcloud storage buckets describe $PUBLIC_BUCKET --format="json" | jq .cors_config
 [
   {
     "maxAgeSeconds": 3600,
-    "method": ["GET", "HEAD", "OPTIONS"],
-    "origin": ["https://example.com", "https://app.example.com"],
-    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"]
+    "method": [
+      "GET",
+      "HEAD",
+      "OPTIONS"
+    ],
+    "origin": [
+      "https://example.com",
+      "https://app.example.com"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin"
+    ]
   }
 ]
 ```
