@@ -623,7 +623,8 @@ DISK_UUID=$(sudo blkid -s UUID -o value /dev/disk/by-id/google-data-disk)
 echo "UUID=$DISK_UUID /mnt/data ext4 discard,defaults,nofail 0 2" | \
   sudo tee -a /etc/fstab
 
-# Verify fstab is correct (dry run mount)
+# Reload systemd so it picks up the updated fstab, then verify
+sudo systemctl daemon-reload
 sudo findmnt --verify
 
 # Write a test file
@@ -633,6 +634,7 @@ cat /mnt/data/test.txt
 
 Expected output:
 ```
+0 parse errors, 0 errors, 0 warnings
 lab02 data disk test
 ```
 
