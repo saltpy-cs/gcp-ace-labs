@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ZONE=$(gcloud config get-value compute/zone)
-TIMEOUT=180
+TIMEOUT=300
 ELAPSED=0
 
 EXTERNAL_IP=$(gcloud compute instances describe lab02-web \

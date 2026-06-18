@@ -356,16 +356,20 @@ gcloud compute instances create lab02-web \
   --metadata-from-file=startup-script=startup.sh
 ```
 
-Wait for the startup script to complete (about 60–90 seconds), then run the verification script:
+The startup script runs `apt-get update` and installs nginx, which takes 2–4 minutes on an e2-micro. Run the verification script — it polls until nginx responds or times out after 5 minutes:
 
 ```bash
 bash verify-nginx.sh
 ```
 
-Expected output:
+Expected output (zone will match your configured zone):
 ```
+External IP: 34.x.x.x
+Waiting for nginx... (0s elapsed)
+Waiting for nginx... (5s elapsed)
+...
 <html><body>
-<h1>Hello from lab02-web in us-central1-a</h1>
+<h1>Hello from lab02-web in europe-west2-a</h1>
 </body></html>
 ```
 
