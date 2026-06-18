@@ -556,9 +556,15 @@ gcloud compute disks create lab02-data-disk \
 
 Expected output:
 ```
-NAME              ZONE           SIZE_GB  TYPE         STATUS
-lab02-data-disk   us-central1-a  20       pd-balanced  READY
+Created [https://www.googleapis.com/compute/v1/projects/PROJECT_ID/zones/ZONE/disks/lab02-data-disk].
+NAME             ZONE            SIZE_GB  TYPE         STATUS
+lab02-data-disk  europe-west2-a  20       pd-balanced  READY
+
+New disks are unformatted. You must format and mount a disk before it
+can be used. ...
 ```
+
+The "unformatted" message is expected — the next steps cover exactly that.
 
 Attach the disk to the running instance:
 
