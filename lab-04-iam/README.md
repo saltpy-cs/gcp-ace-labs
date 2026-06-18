@@ -237,7 +237,7 @@ gcloud projects get-iam-policy $PROJECT_ID \
   --format="table(bindings.role,bindings.members)"
 ```
 
-**Expected output (abbreviated):**
+**Expected output (abbreviated — your output may include extra service accounts from prior work in the same project):**
 
 ```
 ROLE                          MEMBERS
