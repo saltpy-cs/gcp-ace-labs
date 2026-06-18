@@ -249,12 +249,12 @@ Notice the multi-region `us` location vs the regional `us-central1`. The multi-r
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
+```
 
-# Create some test files locally
-echo "Hello from Lab 03" > $LAB_DIR/hello.txt
-echo "Config file content" > $LAB_DIR/config.json
-dd if=/dev/urandom bs=1024 count=100 2>/dev/null | base64 > $LAB_DIR/binary-data.txt
-echo "This file will be deleted" > $LAB_DIR/temp.txt
+Create the test files used throughout this exercise:
+
+```bash
+./create-test-files.sh
 ```
 
 Upload files using `gcloud storage`:
