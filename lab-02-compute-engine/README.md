@@ -204,8 +204,9 @@ gcloud config set compute/region us-central1
 PROJECT_ID=$(gcloud config get-value project)
 ZONE=$(gcloud config get-value compute/zone)
 REGION=$(gcloud config get-value compute/region)
+MY_IP=$(curl -s https://checkip.amazonaws.com)
 
-echo "Project: $PROJECT_ID  Zone: $ZONE"
+echo "Project: $PROJECT_ID  Zone: $ZONE  My IP: $MY_IP"
 ```
 
 Enable the Compute Engine API if you have not already:
@@ -346,9 +347,6 @@ gcloud compute firewall-rules list --filter="name=default-allow-http" --format="
 If the rule is missing (empty output), create it scoped to your current public IP:
 
 ```bash
-MY_IP=$(curl -s https://checkip.amazonaws.com)
-echo "Allowing HTTP from: $MY_IP"
-
 gcloud compute firewall-rules create default-allow-http \
   --allow=tcp:80 \
   --target-tags=http-server \
@@ -356,9 +354,8 @@ gcloud compute firewall-rules create default-allow-http \
   --description="Allow HTTP from my IP only"
 ```
 
-> If your IP changes (e.g. you switch networks), update the rule:
+> If your IP changes (e.g. you switch networks), re-export `MY_IP` from the Setup block and update the rule:
 > ```bash
-> MY_IP=$(curl -s https://checkip.amazonaws.com)
 > gcloud compute firewall-rules update default-allow-http \
 >   --source-ranges="${MY_IP}/32"
 > ```
