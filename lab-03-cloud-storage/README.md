@@ -169,6 +169,8 @@ Signed URLs are generated with `gcloud storage sign-url` (or `gsutil signurl`) u
 These steps are prerequisites specific to Lab 03. Lab 01 must already be complete (gcloud SDK installed, authenticated, project configured).
 
 ```bash
+cd /path/to/gcp-ace-labs/lab-03-cloud-storage
+
 # Confirm your active project
 PROJECT_ID=$(gcloud config get-value project)
 echo "Working in project: $PROJECT_ID"
@@ -184,8 +186,9 @@ gcloud services list --enabled --filter="name:storage.googleapis.com"
 # If not enabled:
 gcloud services enable storage.googleapis.com
 
-# Create a working directory for this lab
-mkdir -p ~/gcs-lab && cd ~/gcs-lab
+# Working directory for local files — contents are gitignored
+LAB_DIR="$(pwd)/work"
+mkdir -p "$LAB_DIR"
 ```
 
 ---
@@ -249,23 +252,23 @@ PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
 # Create some test files locally
-echo "Hello from Lab 03" > ~/gcs-lab/hello.txt
-echo "Config file content" > ~/gcs-lab/config.json
-dd if=/dev/urandom bs=1024 count=100 2>/dev/null | base64 > ~/gcs-lab/binary-data.txt
-echo "This file will be deleted" > ~/gcs-lab/temp.txt
+echo "Hello from Lab 03" > $LAB_DIR/hello.txt
+echo "Config file content" > $LAB_DIR/config.json
+dd if=/dev/urandom bs=1024 count=100 2>/dev/null | base64 > $LAB_DIR/binary-data.txt
+echo "This file will be deleted" > $LAB_DIR/temp.txt
 ```
 
 Upload files using `gcloud storage`:
 
 ```bash
 # Upload a single file
-gcloud storage cp ~/gcs-lab/hello.txt $BUCKET/
+gcloud storage cp $LAB_DIR/hello.txt $BUCKET/
 
 # Upload multiple files
-gcloud storage cp ~/gcs-lab/config.json ~/gcs-lab/binary-data.txt ~/gcs-lab/temp.txt $BUCKET/
+gcloud storage cp $LAB_DIR/config.json $LAB_DIR/binary-data.txt $LAB_DIR/temp.txt $BUCKET/
 
 # Upload to a "folder" (GCS has no real directories — the slash is part of the object name)
-gcloud storage cp ~/gcs-lab/hello.txt $BUCKET/subfolder/hello-copy.txt
+gcloud storage cp $LAB_DIR/hello.txt $BUCKET/subfolder/hello-copy.txt
 ```
 
 **Expected output:**
@@ -300,8 +303,8 @@ Download a file:
 
 ```bash
 # Download to a local path
-gcloud storage cp $BUCKET/hello.txt ~/gcs-lab/hello-downloaded.txt
-cat ~/gcs-lab/hello-downloaded.txt
+gcloud storage cp $BUCKET/hello.txt $LAB_DIR/hello-downloaded.txt
+cat $LAB_DIR/hello-downloaded.txt
 ```
 
 **Expected output:**
@@ -328,7 +331,7 @@ Compare the same operations using the legacy `gsutil` syntax — both produce id
 ```bash
 # gsutil equivalents (you will see these in older documentation and exam questions)
 gsutil ls $BUCKET
-gsutil cp $BUCKET/hello.txt ~/gcs-lab/hello-gsutil.txt
+gsutil cp $BUCKET/hello.txt $LAB_DIR/hello-gsutil.txt
 gsutil rm $BUCKET/subfolder/hello-copy.txt
 ```
 
@@ -354,16 +357,16 @@ Create an object, overwrite it twice, and inspect the version history:
 
 ```bash
 # Create version 1
-echo "Version 1 — original content" > ~/gcs-lab/versioned.txt
-gcloud storage cp ~/gcs-lab/versioned.txt $BUCKET/versioned.txt
+echo "Version 1 — original content" > $LAB_DIR/versioned.txt
+gcloud storage cp $LAB_DIR/versioned.txt $BUCKET/versioned.txt
 
 # Overwrite with version 2
-echo "Version 2 — updated content" > ~/gcs-lab/versioned.txt
-gcloud storage cp ~/gcs-lab/versioned.txt $BUCKET/versioned.txt
+echo "Version 2 — updated content" > $LAB_DIR/versioned.txt
+gcloud storage cp $LAB_DIR/versioned.txt $BUCKET/versioned.txt
 
 # Overwrite with version 3 (the current live version)
-echo "Version 3 — latest content" > ~/gcs-lab/versioned.txt
-gcloud storage cp ~/gcs-lab/versioned.txt $BUCKET/versioned.txt
+echo "Version 3 — latest content" > $LAB_DIR/versioned.txt
+gcloud storage cp $LAB_DIR/versioned.txt $BUCKET/versioned.txt
 ```
 
 List all versions, including noncurrent ones:
@@ -393,8 +396,8 @@ GEN_V1=$(gcloud storage ls -a $BUCKET/versioned.txt | head -1 | grep -oE '#[0-9]
 echo "Generation of version 1: $GEN_V1"
 
 # Download version 1 to confirm its content
-gcloud storage cp "${BUCKET}/versioned.txt#${GEN_V1}" ~/gcs-lab/restored-v1.txt
-cat ~/gcs-lab/restored-v1.txt
+gcloud storage cp "${BUCKET}/versioned.txt#${GEN_V1}" $LAB_DIR/restored-v1.txt
+cat $LAB_DIR/restored-v1.txt
 ```
 
 **Expected output:**
@@ -423,8 +426,8 @@ Delete all noncurrent versions to avoid ongoing storage costs:
 gcloud storage rm -a $BUCKET/versioned.txt
 
 # Now recreate a clean live version
-echo "Clean current version" > ~/gcs-lab/versioned.txt
-gcloud storage cp ~/gcs-lab/versioned.txt $BUCKET/versioned.txt
+echo "Clean current version" > $LAB_DIR/versioned.txt
+gcloud storage cp $LAB_DIR/versioned.txt $BUCKET/versioned.txt
 ```
 
 > **ACE exam tip**: Versioning and lifecycle rules are tested together. The condition `numNewerVersions: 3` means "delete this noncurrent version when there are 3 or more newer versions of the same object." This is how you cap version history without manually deleting generations.
@@ -438,7 +441,7 @@ PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
 # Create the lifecycle rule JSON file
-cat > ~/gcs-lab/lifecycle.json << 'EOF'
+cat > $LAB_DIR/lifecycle.json << 'EOF'
 {
   "rule": [
     {
@@ -489,7 +492,7 @@ Apply the lifecycle configuration:
 
 ```bash
 gcloud storage buckets update $BUCKET \
-  --lifecycle-file=~/gcs-lab/lifecycle.json
+  --lifecycle-file=$LAB_DIR/lifecycle.json
 ```
 
 **Expected output:**
@@ -530,8 +533,8 @@ gcloud storage buckets describe $BUCKET \
 Intentionally break it — provide malformed JSON to see what happens:
 
 ```bash
-echo '{"rule": [{"action": {"type": "Delete"}, "condition": {}}]}' > ~/gcs-lab/bad-lifecycle.json
-gcloud storage buckets update $BUCKET --lifecycle-file=~/gcs-lab/bad-lifecycle.json
+echo '{"rule": [{"action": {"type": "Delete"}, "condition": {}}]}' > $LAB_DIR/bad-lifecycle.json
+gcloud storage buckets update $BUCKET --lifecycle-file=$LAB_DIR/bad-lifecycle.json
 ```
 
 **Expected output (error):**
@@ -630,8 +633,8 @@ gcloud storage buckets create $PUBLIC_BUCKET \
   --uniform-bucket-level-access
 
 # Upload a test file
-echo "<h1>Hello from GCS public bucket</h1>" > ~/gcs-lab/index.html
-gcloud storage cp ~/gcs-lab/index.html $PUBLIC_BUCKET/index.html
+echo "<h1>Hello from GCS public bucket</h1>" > $LAB_DIR/index.html
+gcloud storage cp $LAB_DIR/index.html $PUBLIC_BUCKET/index.html
 ```
 
 Grant public read access by binding `allUsers` to the `roles/storage.objectViewer` role:
@@ -715,8 +718,8 @@ PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
 # Upload a private file to the standard bucket
-echo "This is a confidential report — Lab 03" > ~/gcs-lab/report.txt
-gcloud storage cp ~/gcs-lab/report.txt $BUCKET/private/report.txt
+echo "This is a confidential report — Lab 03" > $LAB_DIR/report.txt
+gcloud storage cp $LAB_DIR/report.txt $BUCKET/private/report.txt
 
 # Confirm it's NOT publicly accessible
 curl -s "https://storage.googleapis.com/${PROJECT_ID}-standard-lab/private/report.txt" | head -5
@@ -802,18 +805,18 @@ PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
 # Create a local directory structure to sync
-mkdir -p ~/gcs-lab/website/{css,js,images}
-echo "<html><body>Home</body></html>" > ~/gcs-lab/website/index.html
-echo "<html><body>About</body></html>" > ~/gcs-lab/website/about.html
-echo "body { font-family: sans-serif; }" > ~/gcs-lab/website/css/style.css
-echo "console.log('hello');" > ~/gcs-lab/website/js/app.js
-echo "placeholder image data" > ~/gcs-lab/website/images/logo.txt
+mkdir -p $LAB_DIR/website/{css,js,images}
+echo "<html><body>Home</body></html>" > $LAB_DIR/website/index.html
+echo "<html><body>About</body></html>" > $LAB_DIR/website/about.html
+echo "body { font-family: sans-serif; }" > $LAB_DIR/website/css/style.css
+echo "console.log('hello');" > $LAB_DIR/website/js/app.js
+echo "placeholder image data" > $LAB_DIR/website/images/logo.txt
 ```
 
 Initial sync using `gcloud storage rsync`:
 
 ```bash
-gcloud storage rsync ~/gcs-lab/website $BUCKET/website/ --recursive
+gcloud storage rsync $LAB_DIR/website $BUCKET/website/ --recursive
 ```
 
 **Expected output:**
@@ -830,10 +833,10 @@ Copying file:///Users/you/gcs-lab/website/js/app.js to gs://my-project-123-stand
 Now modify one file and add a new file, then sync again — only changed files are uploaded:
 
 ```bash
-echo "<html><body>Home v2</body></html>" > ~/gcs-lab/website/index.html
-echo "<html><body>Contact</body></html>" > ~/gcs-lab/website/contact.html
+echo "<html><body>Home v2</body></html>" > $LAB_DIR/website/index.html
+echo "<html><body>Contact</body></html>" > $LAB_DIR/website/contact.html
 
-gcloud storage rsync ~/gcs-lab/website $BUCKET/website/ --recursive
+gcloud storage rsync $LAB_DIR/website $BUCKET/website/ --recursive
 ```
 
 **Expected output:**
@@ -849,9 +852,9 @@ Only the 2 changed/new files were uploaded — not all 5.
 Use the `--delete-unmatched-destination-objects` flag to make GCS exactly mirror the local directory (files deleted locally are also deleted in GCS):
 
 ```bash
-rm ~/gcs-lab/website/about.html
+rm $LAB_DIR/website/about.html
 
-gcloud storage rsync ~/gcs-lab/website $BUCKET/website/ \
+gcloud storage rsync $LAB_DIR/website $BUCKET/website/ \
   --recursive \
   --delete-unmatched-destination-objects
 ```
@@ -866,8 +869,8 @@ Removing gs://my-project-123-standard-lab/website/about.html...
 Use `--dry-run` to preview what rsync would do without making changes — useful before running a destructive sync:
 
 ```bash
-echo "test" > ~/gcs-lab/website/new-file.html
-gcloud storage rsync ~/gcs-lab/website $BUCKET/website/ \
+echo "test" > $LAB_DIR/website/new-file.html
+gcloud storage rsync $LAB_DIR/website $BUCKET/website/ \
   --recursive \
   --delete-unmatched-destination-objects \
   --dry-run
@@ -907,7 +910,7 @@ gcloud storage buckets describe $PUBLIC_BUCKET --format="json(cors)"
 Create a CORS configuration. This example allows GET and HEAD requests from any origin (wildcard), which is appropriate for public CDN-style assets:
 
 ```bash
-cat > ~/gcs-lab/cors.json << 'EOF'
+cat > $LAB_DIR/cors.json << 'EOF'
 [
   {
     "origin": ["https://example.com", "https://app.example.com"],
@@ -923,7 +926,7 @@ Apply the CORS configuration:
 
 ```bash
 gcloud storage buckets update $PUBLIC_BUCKET \
-  --cors-file=~/gcs-lab/cors.json
+  --cors-file=$LAB_DIR/cors.json
 ```
 
 **Expected output:**
@@ -1063,7 +1066,7 @@ gcloud storage buckets list --filter="name~${PROJECT_ID}-.*-lab"
 # Expected output: (empty — no buckets listed)
 
 # Clean up local files
-rm -rf ~/gcs-lab
+rm -rf $LAB_DIR
 ```
 
 **Expected output per bucket deletion:**
