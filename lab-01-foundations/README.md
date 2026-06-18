@@ -548,8 +548,12 @@ gcloud compute disk-types list --filter="zone:($ZONE)"
 Expected output:
 
 ```
-NAME     ZONE             VALID_DISK_SIZES
-hyperdisk-balanced    europe-west2-a  10GB-3600GB
+NAME                  ZONE            VALID_DISK_SIZES
+hyperdisk-balanced    europe-west2-a  4GB-65536GB
+hyperdisk-extreme     europe-west2-a  64GB-65536GB
+hyperdisk-ml          europe-west2-a  4GB-65536GB
+hyperdisk-throughput  europe-west2-a  2048GB-32768GB
+local-ssd             europe-west2-a  375GB-375GB
 pd-balanced           europe-west2-a  10GB-65536GB
 pd-extreme            europe-west2-a  500GB-65536GB
 pd-ssd                europe-west2-a  10GB-65536GB
