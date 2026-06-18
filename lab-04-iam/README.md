@@ -140,7 +140,7 @@ There are four ways a workload authenticates as a service account:
 A principal with `roles/iam.serviceAccountTokenCreator` on a service account can generate tokens for it. This is **impersonation** and is powerful — use it instead of downloading JSON keys.
 
 ```bash
-# Act as a service account without a key file
+# Illustrative only — do not run yet. Replace with a real service account email from the exercises below.
 gcloud storage ls --impersonate-service-account=sa@project.iam.gserviceaccount.com
 ```
 
