@@ -526,18 +526,14 @@ gcloud compute instances create lab02-from-image \
 Verify nginx is already running (no startup script needed):
 
 ```bash
-IMAGE_INSTANCE_IP=$(gcloud compute instances describe lab02-from-image \
-  --zone=$ZONE \
-  --format="get(networkInterfaces[0].accessConfigs[0].natIP)")
-
-# Should respond immediately — nginx was baked into the image
-curl -s "http://$IMAGE_INSTANCE_IP"
+bash verify-nginx.sh lab02-from-image
 ```
 
 Expected output:
 ```
+External IP: 34.x.x.x
 <html><body>
-<h1>Hello from lab02-web in us-central1-a</h1>
+<h1>Hello from lab02-web in europe-west2-a</h1>
 </body></html>
 ```
 
