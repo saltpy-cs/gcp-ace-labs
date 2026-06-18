@@ -689,11 +689,13 @@ gcloud projects describe $PROJECT_ID
 gcloud projects list
 ```
 
-Expected output:
+Expected output (your course project should appear — there may be other projects listed if you are part of an organisation):
 
 ```
-PROJECT_ID               NAME                  PROJECT_NUMBER
+PROJECT_ID               NAME                     PROJECT_NUMBER
 gcp-ace-yourname         GCP ACE Labs (yourname)  123456789012
+other-project-id         Some Other Project        987654321098
+...
 ```
 
 ```bash
@@ -726,7 +728,7 @@ gcloud iam roles list --filter="name:roles/compute" \
   --format="table(name,title)" | head -15
 ```
 
-Expected output:
+Expected output (GCP adds and removes predefined roles over time — your list may differ, but you should see roles along these lines):
 
 ```
 NAME                                TITLE
