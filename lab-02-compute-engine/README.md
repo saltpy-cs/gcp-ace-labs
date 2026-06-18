@@ -277,7 +277,11 @@ Linux lab02-web 6.1.0-18-cloud-amd64 ...
 james_salt@lab02-web:~$
 ```
 
-Once inside the VM, run these commands:
+Once inside the VM, install `jq` then run these commands:
+
+```bash
+sudo apt-get install -y jq
+```
 
 ```bash
 # The metadata root — always this address, always port 80
