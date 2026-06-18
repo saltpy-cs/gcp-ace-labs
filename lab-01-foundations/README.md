@@ -449,10 +449,13 @@ region = europe-west2
 zone = europe-west2-a
 [core]
 account = your-email@gmail.com
+disable_usage_reporting = True
 project = gcp-ace-yourname
 
 Your active configuration is: [default]
 ```
+
+Your output may include additional fields such as `disable_usage_reporting` (set when you opted out of anonymous SDK telemetry during installation) or `pass_credentials_to_gsutil`. These are harmless — `gcloud config list` shows every property that has been explicitly set, regardless of which command set it.
 
 ```bash
 # You can also get individual values
