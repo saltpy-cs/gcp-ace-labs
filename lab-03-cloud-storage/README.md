@@ -229,15 +229,15 @@ Verify all three buckets exist:
 
 ```bash
 gcloud storage buckets list --filter="name~${PROJECT_ID}-.*-lab" \
-  --format="table(name, location, storageClass, iamConfiguration.uniformBucketLevelAccess.enabled)"
+  --format="table(name, location, default_storage_class, uniform_bucket_level_access)"
 ```
 
 **Expected output:**
 ```
-NAME                                    LOCATION     STORAGE_CLASS  UNIFORM_BUCKET_LEVEL_ACCESS_ENABLED
-my-project-123-coldline-lab             US-CENTRAL1  COLDLINE       True
-my-project-123-nearline-lab             US           NEARLINE       True
-my-project-123-standard-lab             US-CENTRAL1  STANDARD       True
+NAME                                    LOCATION     DEFAULT_STORAGE_CLASS  UNIFORM_BUCKET_LEVEL_ACCESS
+tf-labs-saltpy-coldline-lab             US-CENTRAL1  COLDLINE               False
+tf-labs-saltpy-nearline-lab             US           NEARLINE               False
+tf-labs-saltpy-standard-lab             US-CENTRAL1  STANDARD               False
 ```
 
 Notice the multi-region `us` location vs the regional `us-central1`. The multi-region identifier is always lowercase and short (`us`, `eu`, `asia`).
@@ -514,12 +514,12 @@ Verify the access mode:
 
 ```bash
 gcloud storage buckets describe gs://${PROJECT_ID}-finegrained-lab \
-  --format="value(iamConfiguration.uniformBucketLevelAccess.enabled)"
+  --format="json" | jq .uniform_bucket_level_access
 ```
 
 **Expected output:**
 ```
-False
+false
 ```
 
 In fine-grained mode, you can set per-object ACLs. This is harder to audit and can lead to unintended public exposure. Upgrade it to uniform:
@@ -538,12 +538,12 @@ Verify the change:
 
 ```bash
 gcloud storage buckets describe gs://${PROJECT_ID}-finegrained-lab \
-  --format="value(iamConfiguration.uniformBucketLevelAccess.enabled)"
+  --format="json" | jq .uniform_bucket_level_access
 ```
 
 **Expected output:**
 ```
-True
+true
 ```
 
 Now try to reverse it — after 90 days you cannot, but even before 90 days this is a deliberate operation:
