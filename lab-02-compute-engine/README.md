@@ -924,7 +924,7 @@ gcloud compute snapshots delete lab02-web-snap-01 --quiet
 gcloud compute firewall-rules delete default-allow-http --quiet
 
 # Verify nothing remains
-./status.sh
+../status.sh
 ```
 
 Expected output after cleanup (each section should be empty):

@@ -988,7 +988,7 @@ gcloud storage rm -r gs://${PROJECT_ID}-public-lab
 gcloud storage rm -r gs://${PROJECT_ID}-finegrained-lab
 
 # Verify nothing remains
-./status.sh
+../status.sh
 
 # Clean up local files
 find $LAB_DIR -mindepth 1 -not -name '.gitkeep' -delete
