@@ -749,27 +749,17 @@ roles/compute.viewer                Compute Viewer
 
 > **ACE Exam Tip:** Predefined roles like `roles/compute.instanceAdmin.v1` follow the **principle of least privilege** — they grant only the permissions needed for a specific job function. You should nearly always use a predefined role rather than a primitive role (`owner`/`editor`/`viewer`) in production.
 
-```bash
-# Add a label to your project (labels work on projects too, not just resources)
-gcloud projects update $PROJECT_ID \
-  --update-labels=env=lab,course=ace,lab-number=01
-```
+Labels can be applied to projects as well as individual resources. The `gcloud` CLI dropped support for setting project labels in recent SDK versions — to label a project you now use the Cloud Console (IAM & Admin → Labels) or the Resource Manager REST API directly. Once labels are set, `gcloud` can still read and filter on them:
 
 ```bash
-# Verify the labels were applied
+# Describe a project and show only its labels
 gcloud projects describe $PROJECT_ID --format="value(labels)"
-```
 
-Expected output:
-
-```
-course=ace;env=lab;lab-number=01
-```
-
-```bash
-# List projects filtered by label
+# List projects filtered by a label value
 gcloud projects list --filter="labels.course=ace"
 ```
+
+You will use labels extensively on compute and storage resources in later labs, where the CLI commands work as expected.
 
 ---
 
