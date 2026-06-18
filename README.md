@@ -18,6 +18,9 @@ Install the following tools before starting:
 # Google Cloud CLI (includes gsutil and gcloud storage)
 brew install --cask google-cloud-sdk
 
+# jq — JSON processor used throughout the labs
+brew install jq
+
 # kubectl (for lab 07 — GKE)
 brew install kubectl
 # or via gcloud:
@@ -28,6 +31,7 @@ brew install --cask docker
 
 # Verify versions
 gcloud --version        # should be >= 450.0.0
+jq --version
 kubectl version --client
 docker --version
 ```

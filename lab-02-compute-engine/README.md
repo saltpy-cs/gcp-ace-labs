@@ -295,7 +295,7 @@ curl -s -H "Metadata-Flavor: Google" \
 # The service account token — this is how code running on the VM authenticates to GCP APIs
 curl -s -H "Metadata-Flavor: Google" \
   "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
-  | python3 -m json.tool
+  | jq .
 
 # Custom metadata you set at instance creation
 curl -s -H "Metadata-Flavor: Google" \
