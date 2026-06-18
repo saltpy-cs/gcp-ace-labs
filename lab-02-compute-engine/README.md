@@ -864,12 +864,7 @@ gcloud compute instances reset lab02-broken --zone=$ZONE
 After ~60 seconds:
 
 ```bash
-until curl -sf --max-time 3 "http://$BROKEN_IP" > /dev/null; do
-  echo "Waiting for nginx..."
-  sleep 5
-done
-echo "nginx is up"
-curl -s "http://$BROKEN_IP"
+./verify-nginx.sh lab02-broken
 ```
 
 ---
