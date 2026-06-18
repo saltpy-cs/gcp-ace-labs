@@ -356,22 +356,10 @@ gcloud compute instances create lab02-web \
   --metadata-from-file=startup-script=startup.sh
 ```
 
-Wait for the startup script to complete (about 60–90 seconds), then get the external IP and test:
+Wait for the startup script to complete (about 60–90 seconds), then run the verification script:
 
 ```bash
-EXTERNAL_IP=$(gcloud compute instances describe lab02-web \
-  --zone=$ZONE \
-  --format="get(networkInterfaces[0].accessConfigs[0].natIP)")
-
-echo "External IP: $EXTERNAL_IP"
-
-# Poll until nginx responds
-until curl -sf --max-time 3 "http://$EXTERNAL_IP" > /dev/null; do
-  echo "Waiting for nginx..."
-  sleep 5
-done
-
-curl -s "http://$EXTERNAL_IP"
+bash verify-nginx.sh
 ```
 
 Expected output:
