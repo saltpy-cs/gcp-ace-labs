@@ -858,24 +858,11 @@ gcloud storage buckets describe $PUBLIC_BUCKET --format="json(cors)"
 
 Create a CORS configuration. This example allows GET and HEAD requests from any origin (wildcard), which is appropriate for public CDN-style assets:
 
-```bash
-cat > $LAB_DIR/cors.json << 'EOF'
-[
-  {
-    "origin": ["https://example.com", "https://app.example.com"],
-    "method": ["GET", "HEAD", "OPTIONS"],
-    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
-    "maxAgeSeconds": 3600
-  }
-]
-EOF
-```
-
-Apply the CORS configuration:
+Apply the CORS configuration from `cors.json` in this lab's directory:
 
 ```bash
 gcloud storage buckets update $PUBLIC_BUCKET \
-  --cors-file=$LAB_DIR/cors.json
+  --cors-file=cors.json
 ```
 
 **Expected output:**
