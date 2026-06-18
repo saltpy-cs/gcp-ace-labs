@@ -709,12 +709,9 @@ curl -s -H "Metadata-Flavor: Google" \
   "http://metadata.google.internal/computeMetadata/v1/instance/preempted"
 ```
 
-Expected output when not preempted:
-```
-FALSE
-```
+Expected output when not preempted: no output (the key is unset until preemption is imminent).
 
-When GCP is about to preempt, this returns `TRUE`. A robust Spot workload polls this endpoint and checkpoints its work when it sees `TRUE`.
+When GCP is about to reclaim the VM, this returns `TRUE` with approximately 30 seconds of notice. A robust Spot workload polls this endpoint in a loop and checkpoints its work when it sees `TRUE`.
 
 Exit the VM:
 
