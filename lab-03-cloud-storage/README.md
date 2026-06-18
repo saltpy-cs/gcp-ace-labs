@@ -483,8 +483,7 @@ gcloud storage buckets describe $BUCKET --format="json" | jq .lifecycle_config
 Intentionally break it — provide malformed JSON to see what happens:
 
 ```bash
-echo '{"rule": [{"action": {"type": "Delete"}, "condition": {}}]}' > $LAB_DIR/bad-lifecycle.json
-gcloud storage buckets update $BUCKET --lifecycle-file=$LAB_DIR/bad-lifecycle.json
+gcloud storage buckets update $BUCKET --lifecycle-file=bad-lifecycle.json
 ```
 
 **Expected output (error):**
