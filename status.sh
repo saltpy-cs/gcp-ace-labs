@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Optional argument: lab number (e.g. 02, 03). Defaults to all labs.
+# Optional argument: lab number (e.g. 2, 3). Defaults to all labs.
 LAB=${1:-""}
-PREFIX=${LAB:+"lab${LAB}-"}
+PREFIX=${LAB:+$(printf "lab%02d-" "$LAB")}
 PREFIX=${PREFIX:-"lab"}
 
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
