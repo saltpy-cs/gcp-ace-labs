@@ -583,8 +583,7 @@ gcloud storage buckets create $PUBLIC_BUCKET \
   --uniform-bucket-level-access
 
 # Upload a test file
-echo "<h1>Hello from GCS public bucket</h1>" > $LAB_DIR/index.html
-gcloud storage cp $LAB_DIR/index.html $PUBLIC_BUCKET/index.html
+gcloud storage cp index.html $PUBLIC_BUCKET/index.html
 ```
 
 Grant public read access by binding `allUsers` to the `roles/storage.objectViewer` role:
