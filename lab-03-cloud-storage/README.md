@@ -758,15 +758,15 @@ Initial sync using `gcloud storage rsync`:
 gcloud storage rsync $LAB_DIR/website $BUCKET/website/ --recursive
 ```
 
-**Expected output:**
+**Expected output (paths reflect your local directory):**
 ```
-Building synchronization state...
-Starting synchronization...
-Copying file:///Users/you/gcs-lab/website/about.html to gs://my-project-123-standard-lab/website/about.html
-Copying file:///Users/you/gcs-lab/website/css/style.css to gs://my-project-123-standard-lab/website/css/style.css
-Copying file:///Users/you/gcs-lab/website/images/logo.txt to gs://my-project-123-standard-lab/website/images/logo.txt
-Copying file:///Users/you/gcs-lab/website/index.html to gs://my-project-123-standard-lab/website/index.html
-Copying file:///Users/you/gcs-lab/website/js/app.js to gs://my-project-123-standard-lab/website/js/app.js
+At file:///path/to/lab-03/work/website/**, worker process ... listed 5...
+Copying file:///path/to/lab-03/work/website/about.html to gs://PROJECT_ID-standard-lab/website/about.html
+Copying file:///path/to/lab-03/work/website/css/style.css to gs://PROJECT_ID-standard-lab/website/css/style.css
+Copying file:///path/to/lab-03/work/website/images/logo.txt to gs://PROJECT_ID-standard-lab/website/images/logo.txt
+Copying file:///path/to/lab-03/work/website/index.html to gs://PROJECT_ID-standard-lab/website/index.html
+Copying file:///path/to/lab-03/work/website/js/app.js to gs://PROJECT_ID-standard-lab/website/js/app.js
+  Completed files 5/5 | 142.0B/142.0B
 ```
 
 Now modify one file and add a new file, then sync again — only changed files are uploaded:
