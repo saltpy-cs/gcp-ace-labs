@@ -688,7 +688,7 @@ scheduling:
   automaticRestart: false
   instanceTerminationAction: STOP
   onHostMaintenance: TERMINATE
-  preemptible: false
+  preemptible: true
   provisioningModel: SPOT
 ```
 
