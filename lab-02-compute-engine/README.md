@@ -929,14 +929,16 @@ gcloud compute firewall-rules delete default-allow-http --quiet
 
 Expected output after cleanup (all lists should be empty):
 ```
-=== Remaining instances ===
+=== Instances ===
 Listed 0 items.
-=== Remaining disks ===
+=== Disks ===
 Listed 0 items.
-=== Remaining snapshots ===
+=== Snapshots ===
 Listed 0 items.
-=== Remaining images ===
+=== Images ===
 Listed 0 items.
-=== Remaining templates ===
+=== Instance templates ===
+Listed 0 items.
+=== Firewall rules ===
 Listed 0 items.
 ```
