@@ -18,8 +18,7 @@ echo "Signing URL for $OBJECT using $SA_EMAIL..."
 until SIGNED_URL=$(gcloud storage sign-url "$OBJECT" \
   --duration=1h \
   --impersonate-service-account="$SA_EMAIL" \
-  --region="$REGION" \
-  --format="value(url)" 2>/dev/null); do
+  --region="$REGION" 2>/dev/null); do
   if [ $ELAPSED -ge $TIMEOUT ]; then
     echo "Timed out after ${TIMEOUT}s waiting for IAM to propagate."
     exit 1
