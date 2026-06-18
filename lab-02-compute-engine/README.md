@@ -628,7 +628,7 @@ sudo systemctl daemon-reload
 sudo findmnt --verify
 
 # Write a test file
-echo "lab02 data disk test" | sudo tee /mnt/data/test.txt
+echo "lab02 data disk test" | sudo tee /mnt/data/test.txt > /dev/null
 cat /mnt/data/test.txt
 ```
 
