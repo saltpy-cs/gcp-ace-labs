@@ -778,15 +778,14 @@ echo "<html><body>Contact</body></html>" > $LAB_DIR/website/contact.html
 gcloud storage rsync $LAB_DIR/website $BUCKET/website/ --recursive
 ```
 
-**Expected output:**
+**Expected output (only the 2 changed/new files are uploaded — not all 5):**
 ```
-Building synchronization state...
-Starting synchronization...
-Copying file:///Users/you/gcs-lab/website/contact.html to gs://my-project-123-standard-lab/website/contact.html
-Copying file:///Users/you/gcs-lab/website/index.html to gs://my-project-123-standard-lab/website/index.html
+At file:///path/to/lab-03/work/website/**, worker process ... listed 6...
+At gs://PROJECT_ID-standard-lab/website/**, worker process ... listed 5...
+Copying file:///path/to/lab-03/work/website/contact.html to gs://PROJECT_ID-standard-lab/website/contact.html
+Copying file:///path/to/lab-03/work/website/index.html to gs://PROJECT_ID-standard-lab/website/index.html
+  Completed files 2/2 | 68.0B/68.0B
 ```
-
-Only the 2 changed/new files were uploaded — not all 5.
 
 Use the `--delete-unmatched-destination-objects` flag to make GCS exactly mirror the local directory (files deleted locally are also deleted in GCS):
 
