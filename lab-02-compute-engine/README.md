@@ -63,6 +63,23 @@ gcloud compute machine-types list --filter="name~'^e2-' AND zone:us-central1-a" 
   --format="table(name,guestCpus,memoryMb)"
 ```
 
+Expected output (gcloud renders `guestCpus` as `CPUS` and converts `memoryMb` to `MEMORY_GB`):
+
+```
+NAME              CPUS  MEMORY_GB
+e2-highcpu-16     16    16.00
+e2-highcpu-2      2     2.00
+e2-highcpu-32     32    32.00
+e2-medium         2     4.00
+e2-micro          2     1.00
+e2-small          2     2.00
+e2-standard-16    16    64.00
+e2-standard-2     2     8.00
+e2-standard-32    32    128.00
+e2-standard-4     4     16.00
+e2-standard-8     8     32.00
+```
+
 ---
 
 ### Disk types
