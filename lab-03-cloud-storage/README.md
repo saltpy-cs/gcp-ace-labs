@@ -691,13 +691,10 @@ gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
   --role="roles/iam.serviceAccountTokenCreator"
 ```
 
-Generate the signed URL:
+Generate the signed URL (the script retries until the IAM binding propagates):
 
 ```bash
-gcloud storage sign-url $BUCKET/private/report.txt \
-  --duration=1h \
-  --impersonate-service-account=$SA_EMAIL \
-  --region=$REGION
+./sign-url.sh $BUCKET/private/report.txt $SA_EMAIL
 ```
 
 **Expected output (URL format):**
