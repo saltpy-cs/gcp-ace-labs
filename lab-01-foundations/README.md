@@ -615,6 +615,24 @@ gcloud config set compute/zone us-central1-a
 ```
 
 ```bash
+# Verify the prod-environment configuration is fully set
+gcloud config list
+```
+
+Expected output:
+
+```
+[compute]
+region = us-central1
+zone = us-central1-a
+[core]
+account = your-email@gmail.com
+project = gcp-ace-yourname
+
+Your active configuration is: [prod-environment]
+```
+
+```bash
 # Switch back to default
 gcloud config configurations activate default
 ```
