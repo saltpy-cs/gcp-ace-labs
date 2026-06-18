@@ -186,9 +186,8 @@ gcloud services list --enabled --filter="name:storage.googleapis.com"
 # If not enabled:
 gcloud services enable storage.googleapis.com
 
-# Working directory for local files — contents are gitignored
+# Working directory for local files (already exists in the repo, contents are gitignored)
 LAB_DIR="$(pwd)/work"
-mkdir -p "$LAB_DIR"
 ```
 
 ---
@@ -1066,7 +1065,7 @@ gcloud storage buckets list --filter="name~${PROJECT_ID}-.*-lab"
 # Expected output: (empty — no buckets listed)
 
 # Clean up local files
-rm -rf $LAB_DIR
+rm -f $LAB_DIR/*
 ```
 
 **Expected output per bucket deletion:**
