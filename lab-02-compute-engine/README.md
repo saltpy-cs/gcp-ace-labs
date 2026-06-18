@@ -312,13 +312,13 @@ Try querying without the required header to see the security check in action:
 
 ```bash
 # This should return a 403 — missing the required header
-curl -s "http://metadata.google.internal/computeMetadata/v1/project/project-id"
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "http://metadata.google.internal/computeMetadata/v1/project/project-id"
 ```
 
 Expected output:
 ```
-<?xml version='1.0' encoding='UTF-8'?><Error><Code>MetadataServerConfigError</Code>
-<Message>Your client does not have permission to get URL...</Message></Error>
+403
 ```
 
 Exit the VM:
