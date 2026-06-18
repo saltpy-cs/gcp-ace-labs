@@ -666,16 +666,16 @@ PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
 # Upload a private file to the standard bucket
-echo "This is a confidential report — Lab 03" > $LAB_DIR/report.txt
-gcloud storage cp $LAB_DIR/report.txt $BUCKET/private/report.txt
+gcloud storage cp report.txt $BUCKET/private/report.txt
 
 # Confirm it's NOT publicly accessible
-curl -s "https://storage.googleapis.com/${PROJECT_ID}-standard-lab/private/report.txt" | head -5
+./verify-denied.sh "https://storage.googleapis.com/${PROJECT_ID}-standard-lab/private/report.txt"
 ```
 
 **Expected output:**
-```xml
-<Error><Code>AccessDenied</Code>...
+```
+Waiting for access to be denied on: https://storage.googleapis.com/...
+Access denied (403) confirmed.
 ```
 
 Generate a signed URL valid for 1 hour using the authenticated user's credentials (requires `iam.serviceAccounts.signBlob` permission on your own identity — works in Cloud Shell):
