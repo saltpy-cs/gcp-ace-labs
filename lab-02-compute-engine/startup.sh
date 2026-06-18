@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 apt-get update -y
-apt-get install -y nginx
+apt-get install -y nginx jq
 
 # Write a custom index page that identifies this instance
 INSTANCE_NAME=$(curl -sf -H "Metadata-Flavor: Google" \
