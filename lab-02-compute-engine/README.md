@@ -719,16 +719,15 @@ Exit the VM:
 exit
 ```
 
-**Compare pricing (fetch current SKUs)**
+**Inspect machine specs**
 
 ```bash
-# Show on-demand vs Spot price for e2-micro in us-central1
 gcloud compute machine-types describe e2-micro \
   --zone=$ZONE \
   --format="yaml(name,guestCpus,memoryMb)"
 ```
 
-> At time of writing, an e2-micro in us-central1 costs approximately $0.0084/hour on-demand vs $0.0025/hour Spot — about 70% savings. Prices vary by region and over time. Check https://cloud.google.com/compute/vm-instance-pricing for current rates.
+> Pricing is not available via `gcloud` — check https://cloud.google.com/compute/vm-instance-pricing for current rates. At time of writing, an e2-micro in us-central1 costs approximately $0.0084/hour on-demand vs $0.0025/hour Spot — about 70% savings.
 
 ---
 
