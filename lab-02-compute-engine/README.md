@@ -520,10 +520,11 @@ gcloud compute instances create lab02-from-image \
   --boot-disk-size=10GB \
   --boot-disk-type=pd-balanced \
   --tags=http-server \
-  --metadata=enable-oslogin=true
+  --metadata=enable-oslogin=true \
+  --metadata-from-file=startup-script=startup.sh
 ```
 
-Verify nginx is already running (no startup script needed):
+This is the recommended pattern for baked images: software is pre-installed (so `apt-get install nginx jq` completes in seconds rather than minutes), and the startup script handles instance-specific configuration — in this case writing the correct hostname into the index page.
 
 ```bash
 ./verify-nginx.sh lab02-from-image
@@ -532,12 +533,11 @@ Verify nginx is already running (no startup script needed):
 Expected output:
 ```
 External IP: 34.x.x.x
+Waiting for nginx... (0s elapsed)
 <html><body>
-<h1>Hello from lab02-web in europe-west2-a</h1>
+<h1>Hello from lab02-from-image in europe-west2-a</h1>
 </body></html>
 ```
-
-Notice the hostname still says `lab02-web` — it was captured at image creation time. In a real baked image you would replace this with a startup script that fetches only the hostname dynamically, while everything else is pre-installed.
 
 ---
 
