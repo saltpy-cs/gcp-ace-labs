@@ -467,8 +467,11 @@ Best practice: stop the instance before imaging to ensure filesystem consistency
 
 ```bash
 gcloud compute instances stop lab02-web --zone=$ZONE
+```
 
-# Wait for it to stop
+`gcloud compute instances stop` is synchronous — it waits until the instance reaches `TERMINATED` before returning. Verify:
+
+```bash
 gcloud compute instances describe lab02-web --zone=$ZONE \
   --format="get(status)"
 ```
