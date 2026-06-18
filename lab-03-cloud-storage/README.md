@@ -456,30 +456,27 @@ Updating gs://my-project-123-standard-lab/...
 Verify the lifecycle was applied:
 
 ```bash
-gcloud storage buckets describe $BUCKET \
-  --format="json(lifecycle)"
+gcloud storage buckets describe $BUCKET --format="json" | jq .lifecycle
 ```
 
 **Expected output (abbreviated):**
 ```json
 {
-  "lifecycle": {
-    "rule": [
-      {
-        "action": {
-          "storageClass": "NEARLINE",
-          "type": "SetStorageClass"
-        },
-        "condition": {
-          "age": 30,
-          "matchesStorageClass": [
-            "STANDARD"
-          ]
-        }
+  "rule": [
+    {
+      "action": {
+        "storageClass": "NEARLINE",
+        "type": "SetStorageClass"
       },
-      ...
-    ]
-  }
+      "condition": {
+        "age": 30,
+        "matchesStorageClass": [
+          "STANDARD"
+        ]
+      }
+    },
+    ...
+  ]
 }
 ```
 
