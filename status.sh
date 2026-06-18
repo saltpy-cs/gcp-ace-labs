@@ -15,10 +15,10 @@ echo ""
 
 # Compute
 echo "=== Compute Instances ==="
-gcloud compute instances list --filter="name~'^${PREFIX}'" --zones="$ZONE" 2>/dev/null
+gcloud compute instances list --filter="name~'^${PREFIX}'" 2>/dev/null
 
 echo "=== Compute Disks ==="
-gcloud compute disks list --filter="name~'^${PREFIX}'" --zones="$ZONE" 2>/dev/null
+gcloud compute disks list --filter="name~'^${PREFIX}'" 2>/dev/null
 
 echo "=== Compute Snapshots ==="
 gcloud compute snapshots list --filter="name~'^${PREFIX}'" 2>/dev/null
@@ -135,7 +135,7 @@ gcloud deployment-manager deployments list --filter="name~'^${PREFIX}'" 2>/dev/n
 # IAM
 echo "=== Service Accounts (non-default) ==="
 gcloud iam service-accounts list \
-  --filter="NOT email~'(compute|appspot|cloudservices)\.'" \
+  --filter="NOT email~'(compute|appspot|cloudservices)\.' AND NOT email~'^[0-9]+-compute@'" \
   --format="table(email, displayName, disabled)" 2>/dev/null
 
 echo "=== Custom IAM Roles ==="
