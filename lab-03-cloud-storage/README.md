@@ -748,13 +748,8 @@ curl -s "$SHORT_URL" | grep -o '<Code>.*</Code>'
 PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
-# Create a local directory structure to sync
-mkdir -p $LAB_DIR/website/{css,js,images}
-echo "<html><body>Home</body></html>" > $LAB_DIR/website/index.html
-echo "<html><body>About</body></html>" > $LAB_DIR/website/about.html
-echo "body { font-family: sans-serif; }" > $LAB_DIR/website/css/style.css
-echo "console.log('hello');" > $LAB_DIR/website/js/app.js
-echo "placeholder image data" > $LAB_DIR/website/images/logo.txt
+# Copy the checked-in website directory into the working directory
+cp -r website $LAB_DIR/website
 ```
 
 Initial sync using `gcloud storage rsync`:
