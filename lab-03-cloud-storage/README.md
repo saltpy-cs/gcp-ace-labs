@@ -839,13 +839,13 @@ gcloud storage buckets add-iam-policy-binding $PUBLIC_BUCKET \
   --member=allUsers \
   --role=roles/storage.objectViewer
 
-# Verify current CORS config (should be empty)
-gcloud storage buckets describe $PUBLIC_BUCKET --format="json(cors)"
+# Verify current CORS config (should be null — not yet configured)
+gcloud storage buckets describe $PUBLIC_BUCKET --format="json" | jq .cors_config
 ```
 
 **Expected output:**
-```json
-{}
+```
+null
 ```
 
 Create a CORS configuration. This example allows GET and HEAD requests from any origin (wildcard), which is appropriate for public CDN-style assets:
@@ -865,31 +865,19 @@ Updating gs://my-project-123-public-lab/...
 Verify the CORS configuration was applied:
 
 ```bash
-gcloud storage buckets describe $PUBLIC_BUCKET --format="json(cors)"
+gcloud storage buckets describe $PUBLIC_BUCKET --format="json" | jq .cors_config
 ```
 
 **Expected output:**
 ```json
-{
-  "cors": [
-    {
-      "maxAgeSeconds": 3600,
-      "method": [
-        "GET",
-        "HEAD",
-        "OPTIONS"
-      ],
-      "origin": [
-        "https://example.com",
-        "https://app.example.com"
-      ],
-      "responseHeader": [
-        "Content-Type",
-        "Access-Control-Allow-Origin"
-      ]
-    }
-  ]
-}
+[
+  {
+    "maxAgeSeconds": 3600,
+    "method": ["GET", "HEAD", "OPTIONS"],
+    "origin": ["https://example.com", "https://app.example.com"],
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"]
+  }
+]
 ```
 
 Simulate what a browser preflight request looks like and inspect the CORS response headers:
@@ -933,8 +921,8 @@ Remove CORS configuration (to reset to default — no cross-origin access):
 
 ```bash
 gcloud storage buckets update $PUBLIC_BUCKET --clear-cors
-gcloud storage buckets describe $PUBLIC_BUCKET --format="json(cors)"
-# Expected output: {}
+gcloud storage buckets describe $PUBLIC_BUCKET --format="json" | jq .cors_config
+# Expected output: null
 ```
 
 > **ACE exam tip**: CORS is a browser enforcement mechanism only — `curl` and server-to-server requests ignore CORS headers entirely. CORS does not add security to server-side access. It only controls whether browsers permit cross-origin JavaScript requests.
