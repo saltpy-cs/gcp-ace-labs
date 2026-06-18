@@ -337,7 +337,11 @@ Delete the existing instance and recreate it with a startup script. This demonst
 gcloud compute instances delete lab02-web --zone=$ZONE --quiet
 ```
 
-The startup script is in this lab's directory (`startup.sh`). Create the instance passing it directly:
+The startup script is in this lab's directory (`startup.sh`). Make sure you are in that directory, then create the instance:
+
+```bash
+cd /path/to/gcp-ace-labs/lab-02-compute-engine
+```
 
 ```bash
 gcloud compute instances create lab02-web \
