@@ -744,7 +744,7 @@ gcloud compute instance-templates create lab02-web-template \
   --boot-disk-type=pd-balanced \
   --tags=http-server \
   --metadata=enable-oslogin=true \
-  --metadata-from-file=startup-script=/tmp/startup.sh \
+  --metadata-from-file=startup-script=startup.sh \
   --description="Lab02 web server template with nginx startup script"
 ```
 
@@ -790,23 +790,9 @@ gcloud compute instance-templates list \
 
 This exercise intentionally introduces a broken startup script to practice the most common debugging workflow for GCE: checking serial console output when SSH fails or the expected service is not running.
 
-Create a new instance with a broken startup script:
+Create a new instance with a broken startup script (`broken-startup.sh` is in the lab directory):
 
 ```bash
-cat > /tmp/broken-startup.sh << 'EOF'
-#!/bin/bash
-set -euxo pipefail
-
-apt-get update -y
-
-# Intentional error: package does not exist
-apt-get install -y totally-fake-package-that-does-not-exist
-
-# This line will never be reached
-apt-get install -y nginx
-systemctl start nginx
-EOF
-
 gcloud compute instances create lab02-broken \
   --zone=$ZONE \
   --machine-type=e2-micro \
@@ -816,7 +802,7 @@ gcloud compute instances create lab02-broken \
   --boot-disk-type=pd-balanced \
   --tags=http-server \
   --metadata=enable-oslogin=true \
-  --metadata-from-file=startup-script=/tmp/broken-startup.sh
+  --metadata-from-file=startup-script=broken-startup.sh
 ```
 
 Wait 30 seconds then check if nginx is running (it should not be):
@@ -856,7 +842,7 @@ gcloud compute instances tail-serial-port-output lab02-broken \
 ```bash
 gcloud compute instances add-metadata lab02-broken \
   --zone=$ZONE \
-  --metadata-from-file=startup-script=/tmp/startup.sh
+  --metadata-from-file=startup-script=startup.sh
 ```
 
 The startup script only runs automatically on boot. Force it to run again by resetting the instance:
