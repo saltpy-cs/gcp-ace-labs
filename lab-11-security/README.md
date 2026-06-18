@@ -1389,6 +1389,11 @@ Run all of these commands to destroy every resource created in this lab. Cloud A
 policies are billed at $5/month — destroy the policy first.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 11
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 KEYRING_NAME="lab11-keyring"
@@ -1491,13 +1496,8 @@ gcloud iam service-accounts list \
   --filter="email:lab11" \
   --project="${PROJECT_ID}"
 
-echo "--- KMS keys (ring persists, key versions will be in DESTROY_SCHEDULED state) ---"
-gcloud kms keys versions list \
-  --key="${KEY_NAME}" \
-  --keyring="${KEYRING_NAME}" \
-  --location="${REGION}" \
-  --project="${PROJECT_ID}"
+../status.sh 11
 ```
 
-All commands except the KMS key version list should return empty output. The KMS key
-version will show `DESTROY_SCHEDULED` and then disappear after the 24-hour grace period.
+All sections should be empty. KMS key versions enter `DESTROY_SCHEDULED` state and
+disappear after the 24-hour grace period — this is normal.

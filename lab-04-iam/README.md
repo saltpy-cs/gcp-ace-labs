@@ -394,6 +394,11 @@ PROJECT_ID=$(gcloud config get-value project)
 SA_EMAIL="storage-worker-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 BUCKET_NAME="${PROJECT_ID}-lab04-data"
 
+# Enable Private Google Access so the VM can reach Google APIs without an external IP
+gcloud compute networks subnets update default \
+  --region=us-central1 \
+  --enable-private-ip-google-access
+
 # Create a small VM with the service account attached
 gcloud compute instances create lab04-worker \
   --zone=us-central1-a \
@@ -407,7 +412,7 @@ gcloud compute instances create lab04-worker \
 # Wait for the VM to be ready
 gcloud compute instances describe lab04-worker \
   --zone=us-central1-a \
-  --format="value(status)"
+  --format=json | jq -r '.status'
 ```
 
 **Expected output:** `RUNNING`
@@ -446,9 +451,9 @@ ACTIVE  ACCOUNT
 
 ```bash
 # Upload a test file to prove the SA can write to the bucket
-echo "hello from the VM" > /tmp/test.txt
 BUCKET_NAME="YOUR_PROJECT_ID-lab04-data"   # substitute your project ID
-gcloud storage cp /tmp/test.txt gs://$BUCKET_NAME/test.txt
+echo "hello from the VM" > ~/test.txt
+gcloud storage cp ~/test.txt gs://$BUCKET_NAME/test.txt
 gcloud storage ls gs://$BUCKET_NAME/
 ```
 
@@ -510,9 +515,11 @@ gcloud storage ls gs://$BUCKET_NAME/
 **Expected output (failure is the goal):**
 
 ```
-ERROR: (gcloud.storage.ls) HTTPError 403: no-perms-sa@my-project.iam.gserviceaccount.com
-does not have storage.objects.list access to the Google Cloud Storage bucket.
-Permission 'storage.objects.list' denied on resource (or it may not exist).
+ERROR: (gcloud.storage.ls) [no-perms-sa@my-project.iam.gserviceaccount.com] does not have
+permission to access b instance [my-project-lab04-data] (or it may not exist):
+no-perms-sa@my-project.iam.gserviceaccount.com does not have storage.objects.list access
+to the Google Cloud Storage bucket. Permission 'storage.objects.list' denied on resource
+'//storage.googleapis.com/projects/_/buckets/my-project-lab04-data' (or it may not exist).
 ```
 
 The error message tells you exactly which permission is missing and on which resource. This is the diagnostic path: look at the error, find the missing permission, look up which predefined role grants it, bind that role to the principal.
@@ -525,32 +532,23 @@ Exit the VM with `exit`.
 
 When predefined roles are still too broad, define your own. Here you create a role that allows listing and reading objects in Cloud Storage, but not writing or deleting.
 
-```bash
-PROJECT_ID=$(gcloud config get-value project)
+The key `storage.objects.*` permissions are:
 
-# First, explore what permissions exist for storage
-gcloud iam list-testable-permissions \
-  --filter="name:storage.objects" \
-  cloudresourcemanager.googleapis.com/projects/$PROJECT_ID \
-  --format="table(name,stage)"
-```
-
-**Expected output (excerpt):**
-
-```
-NAME                          STAGE
-storage.objects.create        GA
-storage.objects.delete        GA
-storage.objects.get           GA
-storage.objects.getIamPolicy  GA
-storage.objects.list          GA
-storage.objects.setIamPolicy  GA
-storage.objects.update        GA
-```
+| Permission                    | What it allows              |
+|-------------------------------|-----------------------------|
+| `storage.objects.create`      | Upload objects              |
+| `storage.objects.delete`      | Delete objects              |
+| `storage.objects.get`         | Download / read objects     |
+| `storage.objects.list`        | List objects in a bucket    |
+| `storage.objects.getIamPolicy`| Read object IAM policies    |
+| `storage.objects.setIamPolicy`| Modify object IAM policies  |
+| `storage.objects.update`      | Update object metadata      |
 
 Create a custom role with only read permissions:
 
 ```bash
+PROJECT_ID=$(gcloud config get-value project)
+
 gcloud iam roles create storageReadOnly \
   --project=$PROJECT_ID \
   --title="Storage Read Only" \
@@ -588,7 +586,8 @@ gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME \
 List all custom roles in the project:
 
 ```bash
-gcloud iam roles list --project=$PROJECT_ID
+gcloud iam roles list --project=$PROJECT_ID \
+  --format="table(name, title, stage)"
 ```
 
 **Expected output:**
@@ -610,12 +609,11 @@ First, create a tag key and value (requires the Resource Manager API):
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
-PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format=json | jq -r '.projectNumber')
 
 # Create a tag key scoped to the project
 gcloud resource-manager tags keys create environment \
   --parent=projects/$PROJECT_ID \
-  --short-name=environment \
   --description="Environment tag for IAM conditions"
 ```
 
@@ -631,12 +629,11 @@ shortName: environment
 
 ```bash
 # Create a tag value "production"
-TAG_KEY_ID=$(gcloud resource-manager tags keys describe my-project/environment \
-  --format="value(name)")
+TAG_KEY_ID=$(gcloud resource-manager tags keys describe $PROJECT_ID/environment \
+  --format=json | jq -r '.name')
 
 gcloud resource-manager tags values create production \
   --parent=$TAG_KEY_ID \
-  --short-name=production \
   --description="Production environment"
 ```
 
@@ -646,10 +643,15 @@ Now grant a role with a condition that restricts it to resources tagged `environ
 SA_EMAIL="storage-worker-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 TAG_KEY_NS="$PROJECT_ID/environment"
 
+export TAG_KEY_NS
+envsubst < condition.yaml.tmpl > condition.yaml
+
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SA_EMAIL" \
   --role="roles/storage.objectViewer" \
-  --condition="expression=resource.matchTag('${TAG_KEY_NS}/production'),title=ProductionOnly,description=Access only to production-tagged resources"
+  --condition-from-file=condition.yaml
+
+rm condition.yaml
 ```
 
 **Expected output:**
@@ -660,7 +662,7 @@ bindings:
 ...
 - condition:
     description: Access only to production-tagged resources
-    expression: resource.matchTag('my-project/environment/production')
+    expression: resource.matchTag('my-project/environment', 'production')
     title: ProductionOnly
   members:
   - serviceAccount:storage-worker-sa@my-project.iam.gserviceaccount.com
@@ -705,33 +707,35 @@ bindings:
   role: roles/iam.serviceAccountTokenCreator
 ```
 
-Now run a command impersonating the SA:
+List objects as the SA, retrying until IAM propagates:
 
 ```bash
 BUCKET_NAME="${PROJECT_ID}-lab04-data"
 
-# List objects as the SA, without any key file
-gcloud storage ls gs://$BUCKET_NAME/ \
-  --impersonate-service-account=$SA_EMAIL
+./verify-impersonation.sh $SA_EMAIL gs://$BUCKET_NAME/
 ```
 
 **Expected output:**
 
 ```
-WARNING: This command is using service account impersonation. All API calls will be executed as [storage-worker-sa@my-project.iam.gserviceaccount.com].
 gs://my-project-lab04-data/test.txt
 ```
 
-The warning is intentional — it reminds you that impersonation is in effect. Notice no key file was created or downloaded.
+Notice no key file was created or downloaded — the script retried until the IAM binding propagated, then listed the bucket as the SA.
 
 ```bash
 # You can also impersonate for an entire gcloud session
-export CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT=$SA_EMAIL
-gcloud auth list   # shows the impersonated account
-gcloud storage ls gs://$BUCKET_NAME/
+./impersonate-session.sh $SA_EMAIL gs://$BUCKET_NAME/
+```
 
-# Clear impersonation
-unset CLOUDSDK_AUTH_IMPERSONATE_SERVICE_ACCOUNT
+**Expected output:**
+
+```
+                  Credentialed Accounts
+ACTIVE  ACCOUNT
+*       storage-worker-sa@my-project.iam.gserviceaccount.com
+
+gs://my-project-lab04-data/test.txt
 ```
 
 > **ACE exam tip:** `roles/iam.serviceAccountUser` allows a principal to **attach** a service account to a VM or other resource. `roles/iam.serviceAccountTokenCreator` allows a principal to **generate tokens** for the SA (impersonation). These are different roles with different risk profiles — token creator is more powerful.
@@ -767,11 +771,21 @@ Find logs specifically for the service account you created:
 SA_EMAIL="storage-worker-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud logging read \
-  "protoPayload.request.serviceAccount.email=\"$SA_EMAIL\" OR protoPayload.resourceName=\"projects/$PROJECT_ID/serviceAccounts/$SA_EMAIL\"" \
+  "protoPayload.methodName=~\"SetIamPolicy|CreateServiceAccount|DeleteServiceAccount|CreateRole\"" \
   --project=$PROJECT_ID \
-  --freshness=2h \
+  --freshness=4h \
   --limit=10 \
-  --format="json" | python3 -m json.tool | grep -E '"timestamp|methodName|principalEmail"'
+  --format="json" | jq '.[] | {timestamp, methodName: .protoPayload.methodName, principalEmail: .protoPayload.authenticationInfo.principalEmail}'
+```
+
+**Expected output (excerpt):**
+
+```json
+{
+  "timestamp": "2024-01-15T10:23:45.123456789Z",
+  "methodName": "google.iam.admin.v1.CreateServiceAccount",
+  "principalEmail": "your-email@example.com"
+}
 ```
 
 Check audit logs for any access by a specific principal:
@@ -796,7 +810,7 @@ Compare what access the default Compute Engine SA has versus what it should have
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
-PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format=json | jq -r '.projectNumber')
 DEFAULT_COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
 # Check what roles the default compute SA has
@@ -825,7 +839,8 @@ gcloud iam service-accounts create webapp-sa \
 # 2. Grant only what that workload needs
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:webapp-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/cloudsql.client"
+  --role="roles/cloudsql.client" \
+  --condition=None
 
 # 3. Attach that SA to the instance (not the default)
 # gcloud compute instances create ... --service-account=webapp-sa@...
@@ -870,6 +885,11 @@ This confirms `roles/cloudsql.client` gives only connection permissions — not 
 ## Cleanup
 
 Run these commands to remove all resources created in this lab. Order matters — delete VMs before SAs, bindings before roles.
+
+```bash
+# Check what exists before cleanup
+../status.sh 4
+```
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
@@ -925,10 +945,7 @@ if [ -n "$TAG_KEY_ID" ]; then
 fi
 
 # 7. Verify nothing remains
-gcloud compute instances list --filter="name~lab04"
-gcloud iam service-accounts list --filter="email~storage-worker-sa OR email~no-perms-sa"
-gcloud storage buckets list --filter="name~lab04-data"
-gcloud iam roles list --project=$PROJECT_ID
+../status.sh 4
 ```
 
-**Expected final output:** all four verification commands return empty results.
+**Expected final output:** compute, service account, custom role, and bucket sections all empty.

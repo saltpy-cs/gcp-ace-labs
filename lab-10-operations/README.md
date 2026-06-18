@@ -1681,6 +1681,11 @@ curl -s --connect-timeout 5 "http://${VM_IP}" | grep -o '<title>.*</title>' || e
 Run all commands in this section to destroy every resource created in this lab.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 10
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 ZONE="us-central1-a"
@@ -1801,11 +1806,8 @@ gcloud monitoring uptime list \
   --filter="displayName:'Lab 10'" \
   --project="${PROJECT_ID}"
 
-echo "--- IAM service accounts ---"
-gcloud iam service-accounts list \
-  --filter="email:lab10" \
-  --project="${PROJECT_ID}"
+../status.sh 10
 ```
 
-All commands should return empty output. If any resources remain, delete them individually
+All sections should be empty. If any resources remain, delete them individually
 using the resource type and name shown.

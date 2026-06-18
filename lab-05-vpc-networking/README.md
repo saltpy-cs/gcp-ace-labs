@@ -1208,6 +1208,11 @@ This instance: no external IP, no tags, default compute SA. Neither the tag-base
 Destroy all resources in reverse dependency order. Run these commands from your local terminal (not from inside any of the VMs).
 
 ```bash
+# Check what exists before cleanup
+../status.sh 5
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 BUCKET_NAME="lab05-pga-test-${PROJECT_ID}"
 
@@ -1300,11 +1305,7 @@ Verify no billable resources remain:
 # Confirm all instances are deleted
 gcloud compute instances list
 
-# Confirm Cloud Routers are deleted (Cloud NAT depends on them)
-gcloud compute routers list
-
-# Confirm networks are deleted
-gcloud compute networks list
+../status.sh 5
 ```
 
-Expected output for all three commands: empty list (only the `default` network may remain if you have not deleted it from a previous lab).
+Expected output: all sections empty (only the `default` network may remain if you have not deleted it from a previous lab).

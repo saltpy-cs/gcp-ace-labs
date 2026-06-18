@@ -891,6 +891,11 @@ After ~60 seconds:
 Run these commands to destroy all resources created in this lab. Order matters — instances must be deleted before you can delete disks that were not set to auto-delete.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 2
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 ZONE=$(gcloud config get-value compute/zone)
 

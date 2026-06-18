@@ -1112,6 +1112,11 @@ ordered to satisfy dependency constraints (you must delete the forwarding rule b
 proxy, the proxy before the URL map, etc.).
 
 ```bash
+# Check what exists before cleanup
+../status.sh 6
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 
@@ -1196,14 +1201,10 @@ gcloud compute forwarding-rules list \
   --global \
   --project="${PROJECT_ID}"
 
-echo "--- Static IPs ---"
-gcloud compute addresses list \
-  --filter="name:lab06" \
-  --global \
-  --project="${PROJECT_ID}"
+../status.sh 6
 ```
 
-All commands should return empty output. If any resources remain, delete them individually
+All sections should be empty. If any resources remain, delete them individually
 using the resource type and name shown.
 
 > If you created the `default-allow-http` firewall rule in exercise 1 and did not have it

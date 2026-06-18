@@ -1317,6 +1317,11 @@ cleanup promptly — Cloud Spanner (if you created it) and Memorystore accrue co
 when idle.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 9
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 ZONE="us-central1-a"
@@ -1360,14 +1365,11 @@ gcloud redis instances list \
   --filter="name:lab09" \
   --project="${PROJECT_ID}"
 
-echo "--- Compute instances ---"
-gcloud compute instances list \
-  --filter="name:lab09" \
-  --project="${PROJECT_ID}"
+../status.sh 9
 ```
 
-All commands should return empty output. If any resources remain, delete them
-individually using the resource type and name shown.
+All sections should be empty. If any resources remain, delete them individually
+using the resource type and name shown.
 
 > **Reminder:** If you created a Cloud Spanner instance outside of this lab (by following
 > the conceptual example), delete it immediately:

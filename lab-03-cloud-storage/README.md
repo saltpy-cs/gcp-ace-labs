@@ -972,6 +972,11 @@ gcloud storage buckets describe $PUBLIC_BUCKET --format="json" | jq .cors_config
 Run these commands to delete all resources created in this lab. GCS charges by the day, so destroy resources promptly.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 3
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 
 # Remove public access before deleting (avoids any residual exposure)

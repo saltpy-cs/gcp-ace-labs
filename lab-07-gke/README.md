@@ -1411,6 +1411,11 @@ kubectl delete deployment lab07-impossible
 Run all commands to destroy every resource created in this lab. Work through the Kubernetes resources first, then delete the GKE clusters, then delete the GCP resources.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 7
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 ZONE="us-central1-a"
@@ -1484,12 +1489,7 @@ Listed 0 items.
 Verify the GCS bucket is deleted:
 
 ```bash
-gsutil ls "gs://lab07-wi-test-${PROJECT_ID}" 2>&1 || echo "Bucket confirmed deleted."
-```
-
-Expected output:
-```
-BucketNotFoundException: 404 gs://lab07-wi-test-YOUR_PROJECT bucket does not exist.
+../status.sh 7
 ```
 
 > **Note on cluster deletion time:** GKE clusters take 3–5 minutes to delete. The `--quiet` flag skips the confirmation prompt. If you run the deletion commands sequentially (as written above), the script will wait for each deletion to complete before proceeding to the next. Cluster deletion starts billing the moment you submit the command — the meter stops when deletion finishes, not when you run the command.

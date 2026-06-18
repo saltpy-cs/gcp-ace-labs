@@ -103,33 +103,15 @@ gcloud auth application-default print-access-token | cut -c1-40
 
 ### Enable Core APIs
 
-Enable these APIs once for your project. Each is free to enable:
+Run this once to enable all APIs used across the course. Each API is free to enable — you
+only pay for the resources you create, not for enabling the API itself.
 
 ```bash
-gcloud services enable \
-  compute.googleapis.com \
-  storage.googleapis.com \
-  iam.googleapis.com \
-  cloudresourcemanager.googleapis.com \
-  servicenetworking.googleapis.com \
-  logging.googleapis.com \
-  monitoring.googleapis.com \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com \
-  run.googleapis.com \
-  cloudfunctions.googleapis.com \
-  appengine.googleapis.com \
-  container.googleapis.com \
-  sqladmin.googleapis.com \
-  redis.googleapis.com \
-  datastore.googleapis.com \
-  cloudkms.googleapis.com \
-  secretmanager.googleapis.com \
-  compute.googleapis.com \
-  dns.googleapis.com
+./enable-apis.sh
 ```
 
-> Individual lab READMEs call out any additional APIs they require in their **Setup** section.
+This takes 60–90 seconds. Individual lab READMEs call out any API-specific setup in their
+**Setup** section, but all required APIs are covered by this script.
 
 ---
 
@@ -199,6 +181,11 @@ export REGION="us-central1"
 export ZONE="us-central1-a"
 echo "Working in project: ${PROJECT_ID}, region: ${REGION}"
 ```
+
+Two helper scripts live at the repo root:
+
+- **`./enable-apis.sh`** — enable all GCP APIs used in the course (run once after project setup)
+- **`./status.sh [lab-number]`** — show all live resources, optionally filtered to a lab (e.g. `./status.sh 4`). Run before and after cleanup to confirm nothing remains.
 
 Each lab README follows this structure:
 

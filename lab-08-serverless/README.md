@@ -1507,6 +1507,11 @@ Run all of these commands to destroy every resource created in this lab. Cloud S
 the most expensive resource — delete it first.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 8
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 
@@ -1599,14 +1604,10 @@ gcloud pubsub topics list \
   --filter="name:lab08" \
   --project="${PROJECT_ID}"
 
-echo "--- App Engine versions ---"
-gcloud app versions list \
-  --service=default \
-  --project="${PROJECT_ID}"
+../status.sh 8
 ```
 
-All commands should return empty output (except App Engine versions list — stopped versions
-remain visible but are not billable).
+All sections should be empty (App Engine stopped versions remain visible but are not billable).
 
 > **Note on App Engine:** You cannot delete an App Engine application once created. You can
 > only stop or disable versions. The application itself persists in your project. If you

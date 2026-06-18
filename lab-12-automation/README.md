@@ -1902,6 +1902,11 @@ Run all of these commands to destroy every resource created in this lab. Delete 
 order shown to avoid dependency errors.
 
 ```bash
+# Check what exists before cleanup
+../status.sh 12
+```
+
+```bash
 PROJECT_ID=$(gcloud config get-value project)
 PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" \
   --format="value(projectNumber)")
@@ -2003,13 +2008,10 @@ gcloud artifacts repositories list \
   --filter="name:lab12" \
   --project="${PROJECT_ID}"
 
-echo "--- Cloud Source Repositories ---"
-gcloud source repos list \
-  --filter="name:lab12" \
-  --project="${PROJECT_ID}"
+../status.sh 12
 ```
 
-All commands should return empty output.
+All sections should be empty.
 
 > **Note on Cloud Build logs:** Cloud Build automatically creates a Cloud Storage bucket
 > named `PROJECT_ID_cloudbuild` to store build logs. This bucket accumulates log files
