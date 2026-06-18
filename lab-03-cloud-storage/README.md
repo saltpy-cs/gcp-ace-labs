@@ -439,59 +439,13 @@ Lifecycle rules automate the progression of objects through storage classes and 
 PROJECT_ID=$(gcloud config get-value project)
 BUCKET=gs://${PROJECT_ID}-standard-lab
 
-# Create the lifecycle rule JSON file
-cat > $LAB_DIR/lifecycle.json << 'EOF'
-{
-  "rule": [
-    {
-      "action": {
-        "type": "SetStorageClass",
-        "storageClass": "NEARLINE"
-      },
-      "condition": {
-        "age": 30,
-        "matchesStorageClass": ["STANDARD"]
-      }
-    },
-    {
-      "action": {
-        "type": "SetStorageClass",
-        "storageClass": "COLDLINE"
-      },
-      "condition": {
-        "age": 60,
-        "matchesStorageClass": ["NEARLINE"]
-      }
-    },
-    {
-      "action": {
-        "type": "Delete"
-      },
-      "condition": {
-        "age": 90
-      }
-    },
-    {
-      "action": {
-        "type": "Delete"
-      },
-      "condition": {
-        "numNewerVersions": 3,
-        "isLive": false
-      }
-    }
-  ]
-}
-EOF
-```
-
-This policy implements: Standard → Nearline at 30 days → Coldline at 60 days → Delete at 90 days, and purges noncurrent versions when 3 or more newer versions exist.
+This policy implements: Standard → Nearline at 30 days → Coldline at 60 days → Delete at 90 days, and purges noncurrent versions when 3 or more newer versions exist. The policy is in `lifecycle.json` in this lab's directory.
 
 Apply the lifecycle configuration:
 
 ```bash
 gcloud storage buckets update $BUCKET \
-  --lifecycle-file=$LAB_DIR/lifecycle.json
+  --lifecycle-file=lifecycle.json
 ```
 
 **Expected output:**
