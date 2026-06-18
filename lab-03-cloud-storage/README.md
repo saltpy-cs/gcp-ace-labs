@@ -456,7 +456,7 @@ Updating gs://my-project-123-standard-lab/...
 Verify the lifecycle was applied:
 
 ```bash
-gcloud storage buckets describe $BUCKET --format="json" | jq .lifecycle
+gcloud storage buckets describe $BUCKET --format="json" | jq .lifecycle_config
 ```
 
 **Expected output (abbreviated):**
