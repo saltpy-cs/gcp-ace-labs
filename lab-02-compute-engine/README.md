@@ -924,20 +924,7 @@ gcloud compute snapshots delete lab02-web-snap-01 --quiet
 gcloud compute firewall-rules delete default-allow-http --quiet
 
 # Verify nothing remains
-echo "=== Remaining instances ==="
-gcloud compute instances list --filter="name~'^lab02-'" --zones=$ZONE
-
-echo "=== Remaining disks ==="
-gcloud compute disks list --filter="name~'^lab02-'" --zones=$ZONE
-
-echo "=== Remaining snapshots ==="
-gcloud compute snapshots list --filter="name~'^lab02-'"
-
-echo "=== Remaining images ==="
-gcloud compute images list --filter="name~'^lab02-'"
-
-echo "=== Remaining templates ==="
-gcloud compute instance-templates list --filter="name~'^lab02-'"
+./status.sh
 ```
 
 Expected output after cleanup (all lists should be empty):
