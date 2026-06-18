@@ -680,25 +680,24 @@ Access denied (403) confirmed.
 
 Generate a signed URL valid for 1 hour using the authenticated user's credentials (requires `iam.serviceAccounts.signBlob` permission on your own identity — works in Cloud Shell):
 
+Signing a URL requires a service account. We'll use the Compute Engine default service account and impersonate it. First grant yourself the `Token Creator` role on it (required to sign blobs via impersonation):
+
 ```bash
-# Generate a signed URL that expires in 1 hour (3600 seconds)
-gcloud storage sign-url $BUCKET/private/report.txt \
-  --duration=1h \
-  --private-key-file="" \
-  --region=us-central1
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+SA_EMAIL="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
+  --member="user:$(gcloud config get-value account)" \
+  --role="roles/iam.serviceAccountTokenCreator"
 ```
 
-If you receive a permission error in Cloud Shell, use impersonation via a service account (the service account needs `roles/storage.objectViewer` on the bucket):
+Generate the signed URL:
 
 ```bash
-# Alternative: sign URL using a service account (replace with your service account)
-SA_EMAIL="$(gcloud iam service-accounts list --format='value(email)' --limit=1)"
-echo "Using service account: $SA_EMAIL"
-
 gcloud storage sign-url $BUCKET/private/report.txt \
   --duration=1h \
   --impersonate-service-account=$SA_EMAIL \
-  --region=us-central1
+  --region=$REGION
 ```
 
 **Expected output (URL format):**
