@@ -1003,7 +1003,8 @@ gcloud dns record-sets create db.internal.lab05. \
 Expected output:
 
 ```
-Created [https://dns.googleapis.com/dns/v1/projects/.../changes/1].
+NAME                TYPE  TTL  DATA
+db.internal.lab05.  A     300  10.10.1.3
 ```
 
 Add a second A record for the peer VM (different network, but you can still add its IP to the record):
