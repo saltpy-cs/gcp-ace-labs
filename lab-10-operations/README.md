@@ -348,40 +348,7 @@ the answer is Error Reporting.
 
 ### APIs
 
-Enable the required APIs for this lab:
-
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-
-gcloud services enable \
-  monitoring.googleapis.com \
-  logging.googleapis.com \
-  cloudtrace.googleapis.com \
-  compute.googleapis.com \
-  pubsub.googleapis.com \
-  bigquery.googleapis.com \
-  --project="${PROJECT_ID}"
-```
-
-Verify they are enabled:
-
-```bash
-gcloud services list --enabled \
-  --filter="name:(monitoring OR logging OR cloudtrace OR pubsub OR bigquery)" \
-  --project="${PROJECT_ID}" \
-  --format="table(name,title)"
-```
-
-Expected output:
-
-```
-NAME                          TITLE
-bigquery.googleapis.com       BigQuery API
-cloudtrace.googleapis.com     Cloud Trace API
-logging.googleapis.com        Cloud Logging API
-monitoring.googleapis.com     Cloud Monitoring API
-pubsub.googleapis.com         Cloud Pub/Sub API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 

@@ -206,9 +206,9 @@ gcloud config list project
 PROJECT_ID=$(gcloud config get-value project)
 echo "Working in project: $PROJECT_ID"
 
-# Enable the IAM and Compute APIs (likely already enabled from earlier labs)
-gcloud services enable iam.googleapis.com compute.googleapis.com cloudresourcemanager.googleapis.com
 ```
+
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 Store your own email for use throughout the exercises:
 

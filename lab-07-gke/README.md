@@ -229,38 +229,9 @@ sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
 brew install --cask google-cloud-sdk  # already includes plugin
 ```
 
-### Enable Required APIs
+### APIs
 
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-
-gcloud services enable \
-  container.googleapis.com \
-  storage.googleapis.com \
-  iam.googleapis.com \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-Operation "operations/..." finished successfully.
-```
-
-Verify:
-```bash
-gcloud services list --enabled \
-  --filter="name:(container.googleapis.com OR storage.googleapis.com OR iam.googleapis.com)" \
-  --format="table(name,title)" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-NAME                       TITLE
-container.googleapis.com   Kubernetes Engine API
-iam.googleapis.com         Identity and Access Management (IAM) API
-storage.googleapis.com     Cloud Storage API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 

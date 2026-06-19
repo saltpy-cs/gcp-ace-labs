@@ -228,40 +228,7 @@ This decision framework covers the most common ACE exam scenarios:
 
 ### APIs
 
-Enable the APIs required for this lab. Several of these are disabled by default:
-
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-
-gcloud services enable \
-  run.googleapis.com \
-  cloudfunctions.googleapis.com \
-  cloudbuild.googleapis.com \
-  appengine.googleapis.com \
-  sqladmin.googleapis.com \
-  pubsub.googleapis.com \
-  artifactregistry.googleapis.com \
-  vpcaccess.googleapis.com \
-  eventarc.googleapis.com \
-  --project="${PROJECT_ID}"
-```
-
-This may take 60–90 seconds. Confirm the key APIs are enabled:
-
-```bash
-gcloud services list --enabled \
-  --filter="name:(run.googleapis.com OR cloudfunctions.googleapis.com OR appengine.googleapis.com)" \
-  --format="table(name,title)" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-NAME                          TITLE
-appengine.googleapis.com      App Engine Admin API
-cloudfunctions.googleapis.com Cloud Functions API
-run.googleapis.com            Cloud Run Admin API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 

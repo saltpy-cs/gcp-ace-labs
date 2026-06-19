@@ -417,39 +417,7 @@ set -euo pipefail  # exit on error, undefined variable, or pipe failure
 
 ### APIs
 
-Enable all APIs required for this lab:
-
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-
-gcloud services enable \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com \
-  cloudscheduler.googleapis.com \
-  deploymentmanager.googleapis.com \
-  sourcerepo.googleapis.com \
-  pubsub.googleapis.com \
-  run.googleapis.com \
-  clouddeploy.googleapis.com \
-  --project="${PROJECT_ID}"
-```
-
-This may take 60–90 seconds. Confirm the key APIs are enabled:
-
-```bash
-gcloud services list --enabled \
-  --filter="name:(cloudbuild.googleapis.com OR artifactregistry.googleapis.com OR cloudscheduler.googleapis.com)" \
-  --format="table(name,title)" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-NAME                              TITLE
-artifactregistry.googleapis.com   Artifact Registry API
-cloudbuild.googleapis.com         Cloud Build API
-cloudscheduler.googleapis.com     Cloud Scheduler API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 

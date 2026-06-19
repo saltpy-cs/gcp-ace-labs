@@ -187,23 +187,7 @@ needed) to keep things simple.
 
 ### APIs
 
-Ensure these APIs are enabled (they should be from lab 01's setup, but verify):
-
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-gcloud services enable \
-  compute.googleapis.com \
-  --project="${PROJECT_ID}"
-
-# Confirm
-gcloud services list --enabled --filter="name:compute.googleapis.com"
-```
-
-Expected output:
-```
-NAME                       TITLE
-compute.googleapis.com     Compute Engine API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 

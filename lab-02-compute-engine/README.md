@@ -219,16 +219,7 @@ gcloud iam service-accounts add-iam-policy-binding \
   --role="roles/iam.serviceAccountUser"
 ```
 
-Enable the Compute Engine API if you have not already:
-
-```bash
-gcloud services enable compute.googleapis.com
-```
-
-Expected output after enable:
-```
-Operation "operations/acf.p2-..." finished successfully.
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ---
 

@@ -183,9 +183,6 @@ gcloud beta billing projects describe $PROJECT_ID --format="value(billingEnabled
 gcloud services list --enabled --filter="name:storage.googleapis.com"
 # Expected output: NAME: storage.googleapis.com
 
-# If not enabled:
-gcloud services enable storage.googleapis.com
-
 # Working directory for local files (already exists in the repo, contents are gitignored)
 LAB_DIR="$(pwd)/work"
 ```

@@ -248,24 +248,11 @@ gcloud config get-value compute/region
 gcloud config get-value compute/zone
 ```
 
-If region and zone are not set:
+**Note:** All commands in this lab explicitly pass `--region=us-central1` and `--zone=us-central1-a`, so your default config values do not affect the lab. No changes needed regardless of what is set above.
 
-```bash
-gcloud config set compute/region us-central1
-gcloud config set compute/zone us-central1-a
-```
+### APIs
 
-### Enable required APIs
-
-```bash
-gcloud services enable compute.googleapis.com dns.googleapis.com
-```
-
-Expected output:
-
-```
-Operation "operations/acf.p2-..." finished successfully.
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ---
 
@@ -287,7 +274,7 @@ Expected output:
 
 ```
 Created [https://www.googleapis.com/compute/v1/projects/.../networks/vpc-lab05].
-NAME       SUBNET_MODE  BGP_ROUTING_MODE
+NAME       SUBNET_MODE  BGP_ROUTING_MODE  IPV4_RANGE  GATEWAY_IPV4  INTERNAL_IPV6_RANGE
 vpc-lab05  CUSTOM       REGIONAL
 ```
 
@@ -367,6 +354,8 @@ gcloud compute firewall-rules create vpc-lab05-allow-internal-icmp \
   --source-ranges=10.10.0.0/16 \
   --description="Allow ICMP within VPC address space"
 ```
+
+Both rules use priority 1000 — and that is intentional. Priority only matters when two rules match the **same packet**. Because these rules match entirely different traffic (TCP port 22 vs ICMP, and tag-scoped vs CIDR-scoped), they can never compete. You only need to differentiate priorities when you have overlapping rules where one should win over another, such as a broad allow that a narrower deny needs to override.
 
 Launch a public instance (with external IP) tagged `ssh-allowed`:
 

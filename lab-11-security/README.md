@@ -338,43 +338,7 @@ by default on Shielded VM images.
 
 ### APIs
 
-Enable the APIs required for this lab:
-
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-
-gcloud services enable \
-  cloudkms.googleapis.com \
-  secretmanager.googleapis.com \
-  compute.googleapis.com \
-  sqladmin.googleapis.com \
-  storage.googleapis.com \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-Operation "operations/acf.p2-..." finished successfully.
-```
-
-Verify they are all enabled:
-
-```bash
-gcloud services list --enabled \
-  --filter="name:(cloudkms OR secretmanager OR compute OR sqladmin OR storage)" \
-  --format="table(name,title)" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-NAME                        TITLE
-cloudkms.googleapis.com     Cloud Key Management Service (KMS) API
-compute.googleapis.com      Compute Engine API
-secretmanager.googleapis.com Secret Manager API
-sqladmin.googleapis.com     Cloud SQL Admin API
-storage.googleapis.com      Cloud Storage JSON API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 

@@ -290,35 +290,7 @@ for production databases.
 
 ### APIs
 
-Enable the required APIs for this lab:
-
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-
-gcloud services enable \
-  sqladmin.googleapis.com \
-  redis.googleapis.com \
-  compute.googleapis.com \
-  servicenetworking.googleapis.com \
-  --project="${PROJECT_ID}"
-```
-
-Verify they are enabled:
-
-```bash
-gcloud services list --enabled \
-  --filter="name:(sqladmin OR redis OR servicenetworking)" \
-  --project="${PROJECT_ID}" \
-  --format="table(name,title)"
-```
-
-Expected output:
-```
-NAME                             TITLE
-redis.googleapis.com             Google Cloud Memorystore for Redis API
-servicenetworking.googleapis.com Service Networking API
-sqladmin.googleapis.com          Cloud SQL Admin API
-```
+**Note:** All APIs required for this lab are enabled by `./enable-apis.sh` in the course root. If you skipped that step, run it before continuing.
 
 ### Environment Variables
 
