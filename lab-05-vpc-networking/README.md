@@ -1007,10 +1007,10 @@ NAME                TYPE  TTL  DATA
 db.internal.lab05.  A     300  10.10.1.3
 ```
 
-Add a second A record for the peer VM (different network, but you can still add its IP to the record):
+Add a second A record pointing to `vm-public`'s internal IP:
 
 ```bash
-VM_PUBLIC_IP=$(gcloud compute instances describe vm-public \
+VM_PUBLIC_INTERNAL_IP=$(gcloud compute instances describe vm-public \
   --zone=us-central1-a \
   --format="get(networkInterfaces[0].networkIP)")
 
@@ -1018,7 +1018,7 @@ gcloud dns record-sets create app.internal.lab05. \
   --zone=lab05-internal \
   --type=A \
   --ttl=300 \
-  --rrdatas="${VM_PUBLIC_IP}"
+  --rrdatas="${VM_PUBLIC_INTERNAL_IP}"
 ```
 
 List the records in the zone:
@@ -1030,11 +1030,20 @@ gcloud dns record-sets list --zone=lab05-internal
 Expected output:
 
 ```
-NAME                  TYPE  TTL  DATA
-internal.lab05.       NS    21600 ns-cloud-a1.googledomains.com., ...
-internal.lab05.       SOA   21600 ns-cloud-a1.googledomains.com. ...
-app.internal.lab05.   A     300   10.10.1.2
-db.internal.lab05.    A     300   10.10.1.3
+NAME                TYPE  TTL    DATA
+internal.lab05.     NS    21600  ns-gcp-private.googleapis.com.
+internal.lab05.     SOA   21600  ns-gcp-private.googleapis.com. cloud-dns-hostmaster.google.com. 1 21600 3600 259200 300
+app.internal.lab05. A     300    10.10.1.2
+db.internal.lab05.  A     300    10.10.1.3
+```
+
+Private DNS zones use `ns-gcp-private.googleapis.com` as their nameserver rather than the public-facing `ns-cloud-*.googledomains.com` nameservers used for public zones.
+
+Install `dnsutils` on `vm-public` so `nslookup` is available:
+
+```bash
+gcloud compute ssh vm-public --zone=us-central1-a \
+  --command="sudo apt-get install -y -q dnsutils"
 ```
 
 Test DNS resolution from `vm-public` (which is in `vpc-lab05`, the authorized network):
@@ -1061,7 +1070,7 @@ Now verify the private zone is NOT visible from `vpc-peer` (a different, non-aut
 
 ```bash
 gcloud compute ssh vm-peer --zone=us-central1-a \
-  --command="nslookup db.internal.lab05"
+  --command="sudo apt-get install -y -q dnsutils && nslookup db.internal.lab05"
 ```
 
 Expected output:
@@ -1194,7 +1203,24 @@ gcloud compute instances create vm-notag-nobackend \
   --image-project=debian-cloud
 ```
 
-This instance: no external IP, no tags, default compute SA. Neither the tag-based SSH rule nor the SA-based SSH rule applies to it. SSH would be impossible even from within the VPC via port 22.
+This instance has no external IP, no tags, and the default compute SA. Neither the tag-based SSH rule nor the SA-based SSH rule applies to it. Prove it:
+
+```bash
+VM_NOTAG_IP=$(gcloud compute instances describe vm-notag-nobackend \
+  --zone=us-central1-a \
+  --format="get(networkInterfaces[0].networkIP)")
+
+gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+  --command="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${VM_NOTAG_IP}"
+```
+
+Expected output:
+
+```
+ssh: connect to host 10.10.1.X port 22: Connection timed out
+```
+
+The connection times out rather than being refused — the VPC firewall silently drops the packet. There is no rule matching this instance, so traffic never reaches it.
 
 > **ACE Exam Tip:** Service account-based firewall targeting is more secure than tag-based targeting in production environments. You need `compute.instances.setServiceAccount` permission to change a VM's SA — a much higher-privilege operation than adding a tag. This prevents privilege escalation through tag manipulation.
 
