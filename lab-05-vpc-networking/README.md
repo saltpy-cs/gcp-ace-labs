@@ -224,7 +224,7 @@ Cloud DNS private zones are visible only within the VPCs you authorize. They are
 Private Zone: internal.example.com
 ├── A record: db.internal.example.com → 10.10.1.100
 ├── A record: cache.internal.example.com → 10.10.1.101
-└── Authorized networks: [vpc-lab05]
+└── Authorized networks: [lab05-vpc-main]
 ```
 
 VMs in the authorized VPC resolve these names automatically. VMs in a peered VPC can also resolve them if DNS peering is configured.
@@ -265,7 +265,7 @@ gcloud config get-value compute/zone
 Create the first VPC with no subnets:
 
 ```bash
-gcloud compute networks create vpc-lab05 \
+gcloud compute networks create lab05-vpc-main \
   --subnet-mode=custom \
   --description="Lab 05 primary VPC"
 ```
@@ -273,16 +273,16 @@ gcloud compute networks create vpc-lab05 \
 Expected output:
 
 ```
-Created [https://www.googleapis.com/compute/v1/projects/.../networks/vpc-lab05].
+Created [https://www.googleapis.com/compute/v1/projects/.../networks/lab05-vpc-main].
 NAME       SUBNET_MODE  BGP_ROUTING_MODE  IPV4_RANGE  GATEWAY_IPV4  INTERNAL_IPV6_RANGE
-vpc-lab05  CUSTOM       REGIONAL
+lab05-vpc-main  CUSTOM       REGIONAL
 ```
 
 Add a subnet in us-central1 for your main workloads:
 
 ```bash
-gcloud compute networks subnets create subnet-private \
-  --network=vpc-lab05 \
+gcloud compute networks subnets create lab05-subnet-private \
+  --network=lab05-vpc-main \
   --region=us-central1 \
   --range=10.10.1.0/24 \
   --description="Private workload subnet"
@@ -291,16 +291,16 @@ gcloud compute networks subnets create subnet-private \
 Expected output:
 
 ```
-Created [https://...subnets/subnet-private].
+Created [https://...subnets/lab05-subnet-private].
 NAME            REGION       NETWORK    RANGE          STACK_TYPE  IPV6_ACCESS_TYPE  INTERNAL_IPV6_PREFIX  EXTERNAL_IPV6_PREFIX
-subnet-private  us-central1  vpc-lab05  10.10.1.0/24   IPV4_ONLY
+lab05-subnet-private  us-central1  lab05-vpc-main  10.10.1.0/24   IPV4_ONLY
 ```
 
 Add a second subnet in a different region to demonstrate that one VPC spans regions:
 
 ```bash
-gcloud compute networks subnets create subnet-east \
-  --network=vpc-lab05 \
+gcloud compute networks subnets create lab05-subnet-east \
+  --network=lab05-vpc-main \
   --region=us-east1 \
   --range=10.10.2.0/24 \
   --description="East region subnet (same VPC)"
@@ -309,15 +309,15 @@ gcloud compute networks subnets create subnet-east \
 List subnets to confirm both exist in one VPC:
 
 ```bash
-gcloud compute networks subnets list --filter="network:vpc-lab05"
+gcloud compute networks subnets list --filter="network:lab05-vpc-main"
 ```
 
 Expected output:
 
 ```
 NAME            REGION       NETWORK    RANGE
-subnet-east     us-east1     vpc-lab05  10.10.2.0/24
-subnet-private  us-central1  vpc-lab05  10.10.1.0/24
+lab05-subnet-east     us-east1     lab05-vpc-main  10.10.2.0/24
+lab05-subnet-private  us-central1  lab05-vpc-main  10.10.1.0/24
 ```
 
 > **ACE Exam Tip:** A custom VPC with subnets in multiple regions is still **one** VPC. There is no "peering" or "gateway" between regions within a single VPC — traffic routes internally.
@@ -331,8 +331,8 @@ A new custom VPC has no firewall rules except the two implied rules (allow-all-e
 Create a firewall rule allowing SSH only to instances tagged `ssh-allowed`:
 
 ```bash
-gcloud compute firewall-rules create vpc-lab05-allow-ssh \
-  --network=vpc-lab05 \
+gcloud compute firewall-rules create lab05-allow-ssh \
+  --network=lab05-vpc-main \
   --direction=INGRESS \
   --priority=1000 \
   --action=ALLOW \
@@ -345,8 +345,8 @@ gcloud compute firewall-rules create vpc-lab05-allow-ssh \
 Create a rule allowing internal ICMP traffic between all instances in the VPC:
 
 ```bash
-gcloud compute firewall-rules create vpc-lab05-allow-internal-icmp \
-  --network=vpc-lab05 \
+gcloud compute firewall-rules create lab05-allow-internal-icmp \
+  --network=lab05-vpc-main \
   --direction=INGRESS \
   --priority=1000 \
   --action=ALLOW \
@@ -360,10 +360,10 @@ Both rules use priority 1000 — and that is intentional. Priority only matters 
 Launch a public instance (with external IP) tagged `ssh-allowed`:
 
 ```bash
-gcloud compute instances create vm-public \
+gcloud compute instances create lab05-vm-public \
   --zone=us-central1-a \
   --machine-type=e2-micro \
-  --subnet=subnet-private \
+  --subnet=lab05-subnet-private \
   --tags=ssh-allowed \
   --image-family=debian-12 \
   --image-project=debian-cloud
@@ -383,13 +383,13 @@ Expected output:
 
 ```
 NAME       ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
-vm-public  us-central1-a  e2-micro                   10.10.1.2    34.XX.XX.XX    RUNNING
+lab05-vm-public  us-central1-a  e2-micro                   10.10.1.2    34.XX.XX.XX    RUNNING
 ```
 
 SSH in to verify access works:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a
+gcloud compute ssh lab05-vm-public --zone=us-central1-a
 ```
 
 Exit the SSH session:
@@ -401,7 +401,7 @@ exit
 **Now intentionally break it** — remove the `ssh-allowed` tag and verify SSH is blocked:
 
 ```bash
-gcloud compute instances remove-tags vm-public \
+gcloud compute instances remove-tags lab05-vm-public \
   --zone=us-central1-a \
   --tags=ssh-allowed
 ```
@@ -409,7 +409,7 @@ gcloud compute instances remove-tags vm-public \
 Try to SSH (this should fail or time out):
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-o ConnectTimeout=10"
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-o ConnectTimeout=10"
 ```
 
 Expected output:
@@ -422,12 +422,12 @@ ERROR: (gcloud.compute.ssh) [/usr/bin/ssh] exited with return code [255].
 The firewall rule is on the VPC, but without the tag, the rule does not apply to this instance. Restore the tag:
 
 ```bash
-gcloud compute instances add-tags vm-public \
+gcloud compute instances add-tags lab05-vm-public \
   --zone=us-central1-a \
   --tags=ssh-allowed
 ```
 
-> **ACE Exam Tip:** Firewall rules target instances by tag, not by subnet. An instance in `subnet-private` with no tags has no INGRESS rules applying to it (beyond the implied deny). An instance in the same subnet with the right tag has SSH open. Subnets do not inherit firewall rules.
+> **ACE Exam Tip:** Firewall rules target instances by tag, not by subnet. An instance in `lab05-subnet-private` with no tags has no INGRESS rules applying to it (beyond the implied deny). An instance in the same subnet with the right tag has SSH open. Subnets do not inherit firewall rules.
 
 ---
 
@@ -436,10 +436,10 @@ gcloud compute instances add-tags vm-public \
 Create an instance with **no external IP**. This simulates a private workload — a database server, an internal API, a batch job runner.
 
 ```bash
-gcloud compute instances create vm-private \
+gcloud compute instances create lab05-vm-private \
   --zone=us-central1-a \
   --machine-type=e2-micro \
-  --subnet=subnet-private \
+  --subnet=lab05-subnet-private \
   --no-address \
   --tags=ssh-allowed \
   --image-family=debian-12 \
@@ -450,15 +450,15 @@ Expected output:
 
 ```
 NAME        ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP  STATUS
-vm-private  us-central1-a  e2-micro                   10.10.1.3                 RUNNING
+lab05-vm-private  us-central1-a  e2-micro                   10.10.1.3                 RUNNING
 ```
 
 Note the empty `EXTERNAL_IP` column. This instance has no route to the internet.
 
-You cannot SSH directly to a private instance from your laptop (no external IP to connect to). Use `vm-public` as a bastion host. SSH to the bastion, then use the internal IP to reach the private instance:
+You cannot SSH directly to a private instance from your laptop (no external IP to connect to). Use `lab05-vm-public` as a bastion host. SSH to the bastion, then use the internal IP to reach the private instance:
 
 ```bash
-gcloud compute ssh vm-public \
+gcloud compute ssh lab05-vm-public \
   --zone=us-central1-a \
   --command="ping -c 3 10.10.1.3"
 ```
@@ -472,7 +472,7 @@ PING 10.10.1.3 (10.10.1.3) 56(84) bytes of data.
 64 bytes from 10.10.1.3: icmp_seq=3 ttl=64 time=1.01 ms
 ```
 
-Now verify that the private instance cannot reach the internet. You will use vm-public as a bastion to reach vm-private using SSH agent forwarding — this allows vm-public to authenticate to vm-private using your local private key without copying it onto the bastion.
+Now verify that the private instance cannot reach the internet. You will use lab05-vm-public as a bastion to reach lab05-vm-private using SSH agent forwarding — this allows lab05-vm-public to authenticate to lab05-vm-private using your local private key without copying it onto the bastion.
 
 Agent forwarding requires the key to already be loaded in your local SSH agent. `gcloud compute ssh` does not do this automatically, so load it first:
 
@@ -481,23 +481,23 @@ Agent forwarding requires the key to already be loaded in your local SSH agent. 
 ssh-add ~/.ssh/google_compute_engine
 ```
 
-Then SSH to vm-public with agent forwarding enabled:
+Then SSH to lab05-vm-public with agent forwarding enabled:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A"
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-A"
 ```
 
-From inside vm-public, SSH to vm-private using its internal IP:
+From inside lab05-vm-public, SSH to lab05-vm-private using its internal IP:
 
 ```bash
-# Inside vm-public
+# Inside lab05-vm-public
 ssh -o StrictHostKeyChecking=no 10.10.1.3
 ```
 
-From inside vm-private, attempt an outbound connection:
+From inside lab05-vm-private, attempt an outbound connection:
 
 ```bash
-# Inside vm-private
+# Inside lab05-vm-private
 curl --max-time 10 https://example.com
 ```
 
@@ -510,8 +510,8 @@ curl: (28) Connection timed out after 10001 milliseconds
 The instance has no default route to the internet. Exit back to your local machine:
 
 ```bash
-exit   # exit vm-private
-exit   # exit vm-public
+exit   # exit lab05-vm-private
+exit   # exit lab05-vm-public
 ```
 
 ---
@@ -523,41 +523,41 @@ Cloud NAT gives private instances outbound internet access without assigning the
 Create the Cloud Router:
 
 ```bash
-gcloud compute routers create router-lab05 \
-  --network=vpc-lab05 \
+gcloud compute routers create lab05-router \
+  --network=lab05-vpc-main \
   --region=us-central1
 ```
 
 Expected output:
 
 ```
-Creating router [router-lab05]...done.
+Creating router [lab05-router]...done.
 NAME          REGION       NETWORK
-router-lab05  us-central1  vpc-lab05
+lab05-router  us-central1  lab05-vpc-main
 ```
 
 Create the Cloud NAT gateway attached to the router:
 
 ```bash
-gcloud compute routers nats create nat-lab05 \
-  --router=router-lab05 \
+gcloud compute routers nats create lab05-nat \
+  --router=lab05-router \
   --region=us-central1 \
   --auto-allocate-nat-external-ips \
-  --nat-custom-subnet-ip-ranges=subnet-private
+  --nat-custom-subnet-ip-ranges=lab05-subnet-private
 ```
 
-The flag `--nat-custom-subnet-ip-ranges=subnet-private` limits NAT to only `subnet-private`. This is better than enabling NAT for all subnets — explicit is safer.
+The flag `--nat-custom-subnet-ip-ranges=lab05-subnet-private` limits NAT to only `lab05-subnet-private`. This is better than enabling NAT for all subnets — explicit is safer.
 
 Expected output:
 
 ```
-Creating NAT [nat-lab05] in router [router-lab05]...done.
+Creating NAT [lab05-nat] in router [lab05-router]...done.
 ```
 
 Wait about 30 seconds for NAT to propagate, then test from the private instance. The Cloud NAT gateway takes a moment to become active after creation.
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl --max-time 15 -s -o /dev/null -w \"%{http_code}\" https://example.com'"
 ```
 
@@ -572,7 +572,7 @@ HTTP 200 — the private instance reached the internet through Cloud NAT. The pu
 Verify what external IP the private instance appears to use:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl -s https://ifconfig.me'"
 ```
 
@@ -585,8 +585,8 @@ Expected output (an external IP belonging to Google's NAT pool, not your instanc
 Describe the NAT gateway to see its allocated external IPs:
 
 ```bash
-gcloud compute routers nats describe nat-lab05 \
-  --router=router-lab05 \
+gcloud compute routers nats describe lab05-nat \
+  --router=lab05-router \
   --region=us-central1
 ```
 
@@ -596,13 +596,13 @@ gcloud compute routers nats describe nat-lab05 \
 
 ### Exercise 5 — Enable Private Google Access
 
-Right now, `vm-private` can reach the general internet (via Cloud NAT), but imagine you wanted to keep it isolated from the public internet while still allowing it to read from Cloud Storage. Private Google Access (PGA) solves this — it routes Google API traffic internally without going through Cloud NAT or requiring an external IP.
+Right now, `lab05-vm-private` can reach the general internet (via Cloud NAT), but imagine you wanted to keep it isolated from the public internet while still allowing it to read from Cloud Storage. Private Google Access (PGA) solves this — it routes Google API traffic internally without going through Cloud NAT or requiring an external IP.
 
 **First, disable Cloud NAT so you can clearly see PGA working independently:**
 
 ```bash
-gcloud compute routers nats delete nat-lab05 \
-  --router=router-lab05 \
+gcloud compute routers nats delete lab05-nat \
+  --router=lab05-router \
   --region=us-central1 \
   --quiet
 ```
@@ -610,7 +610,7 @@ gcloud compute routers nats delete nat-lab05 \
 Verify the private instance cannot reach the internet again:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl --max-time 10 -s -o /dev/null -w \"%{http_code}\" https://example.com'"
 ```
 
@@ -625,7 +625,7 @@ Expected output:
 Good — no internet. Now enable Private Google Access on the subnet:
 
 ```bash
-gcloud compute networks subnets update subnet-private \
+gcloud compute networks subnets update lab05-subnet-private \
   --region=us-central1 \
   --enable-private-ip-google-access
 ```
@@ -633,13 +633,13 @@ gcloud compute networks subnets update subnet-private \
 Expected output:
 
 ```
-Updated [https://...subnets/subnet-private].
+Updated [https://...subnets/lab05-subnet-private].
 ```
 
 Confirm PGA is enabled:
 
 ```bash
-gcloud compute networks subnets describe subnet-private \
+gcloud compute networks subnets describe lab05-subnet-private \
   --region=us-central1 \
   --format="get(privateIpGoogleAccess)"
 ```
@@ -666,7 +666,7 @@ echo 'Private Google Access works!' | gcloud storage cp - gs://${BUCKET_NAME}/te
 Now verify the private instance can access GCS using its service account (it has no external IP and NAT is disabled):
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'gcloud storage cat gs://${BUCKET_NAME}/test.txt'"
 ```
 
@@ -683,28 +683,28 @@ Private Google Access works!
 Re-enable Cloud NAT for subsequent exercises:
 
 ```bash
-gcloud compute routers nats create nat-lab05 \
-  --router=router-lab05 \
+gcloud compute routers nats create lab05-nat \
+  --router=lab05-router \
   --region=us-central1 \
   --auto-allocate-nat-external-ips \
-  --nat-custom-subnet-ip-ranges=subnet-private
+  --nat-custom-subnet-ip-ranges=lab05-subnet-private
 ```
 
 ---
 
 ### Exercise 6 — Create a Second VPC and Set Up VPC Peering
 
-VPC peering connects two VPCs so instances in each can communicate using internal IPs. You will create a second VPC (simulating a separate team's network or a separate environment) and peer it with `vpc-lab05`.
+VPC peering connects two VPCs so instances in each can communicate using internal IPs. You will create a second VPC (simulating a separate team's network or a separate environment) and peer it with `lab05-vpc-main`.
 
-Create the second VPC and subnet. The CIDR must not overlap with `vpc-lab05` (10.10.0.0/16):
+Create the second VPC and subnet. The CIDR must not overlap with `lab05-vpc-main` (10.10.0.0/16):
 
 ```bash
-gcloud compute networks create vpc-peer \
+gcloud compute networks create lab05-vpc-peer \
   --subnet-mode=custom \
   --description="Lab 05 peering target VPC"
 
-gcloud compute networks subnets create subnet-peer \
-  --network=vpc-peer \
+gcloud compute networks subnets create lab05-subnet-peer \
+  --network=lab05-vpc-peer \
   --region=us-central1 \
   --range=10.20.1.0/24 \
   --description="Peer VPC subnet"
@@ -713,16 +713,16 @@ gcloud compute networks subnets create subnet-peer \
 Add firewall rules to allow ICMP and SSH within the peer VPC:
 
 ```bash
-gcloud compute firewall-rules create vpc-peer-allow-icmp \
-  --network=vpc-peer \
+gcloud compute firewall-rules create lab05-allow-peer-icmp \
+  --network=lab05-vpc-peer \
   --direction=INGRESS \
   --priority=1000 \
   --action=ALLOW \
   --rules=icmp \
   --source-ranges=10.0.0.0/8
 
-gcloud compute firewall-rules create vpc-peer-allow-ssh \
-  --network=vpc-peer \
+gcloud compute firewall-rules create lab05-allow-peer-ssh \
+  --network=lab05-vpc-peer \
   --direction=INGRESS \
   --priority=1000 \
   --action=ALLOW \
@@ -734,10 +734,10 @@ gcloud compute firewall-rules create vpc-peer-allow-ssh \
 Launch an instance in the peer VPC:
 
 ```bash
-gcloud compute instances create vm-peer \
+gcloud compute instances create lab05-vm-peer \
   --zone=us-central1-a \
   --machine-type=e2-micro \
-  --subnet=subnet-peer \
+  --subnet=lab05-subnet-peer \
   --tags=ssh-allowed \
   --image-family=debian-12 \
   --image-project=debian-cloud
@@ -747,13 +747,13 @@ Expected output:
 
 ```
 NAME     ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
-vm-peer  us-central1-a  e2-micro                   10.20.1.2    34.YY.YY.YY    RUNNING
+lab05-vm-peer  us-central1-a  e2-micro                   10.20.1.2    34.YY.YY.YY    RUNNING
 ```
 
-Before peering, verify that `vm-public` (10.10.1.2) cannot ping `vm-peer` (10.20.1.2):
+Before peering, verify that `lab05-vm-public` (10.10.1.2) cannot ping `lab05-vm-peer` (10.20.1.2):
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a \
   --command="ping -c 3 -W 2 10.20.1.2"
 ```
 
@@ -768,15 +768,15 @@ PING 10.20.1.2 (10.20.1.2) 56(84) bytes of data.
 
 No connectivity — the VPCs are isolated. Now create the peering connection. **Both sides must create the peering:**
 
-Side 1 — from `vpc-lab05` to `vpc-peer`:
+Side 1 — from `lab05-vpc-main` to `lab05-vpc-peer`:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 
-gcloud compute networks peerings create peering-lab05-to-peer \
-  --network=vpc-lab05 \
+gcloud compute networks peerings create lab05-peering-main-to-peer \
+  --network=lab05-vpc-main \
   --peer-project=${PROJECT_ID} \
-  --peer-network=vpc-peer \
+  --peer-network=lab05-vpc-peer \
   --export-custom-routes \
   --import-custom-routes
 ```
@@ -784,13 +784,13 @@ gcloud compute networks peerings create peering-lab05-to-peer \
 Expected output (the full network object in YAML, truncated here for brevity):
 
 ```
-Updated [https://www.googleapis.com/compute/v1/projects/.../networks/vpc-lab05].
+Updated [https://www.googleapis.com/compute/v1/projects/.../networks/lab05-vpc-main].
 ---
 ...
 peerings:
 - ...
-  name: peering-lab05-to-peer
-  network: https://.../networks/vpc-peer
+  name: lab05-peering-main-to-peer
+  network: https://.../networks/lab05-vpc-peer
   state: INACTIVE
   stateDetails: '[...]: Waiting for peer network to connect.'
 ...
@@ -798,13 +798,13 @@ peerings:
 
 The peering shows `INACTIVE` — this is expected. VPC peering requires both sides to create the connection. The state will become `ACTIVE` once side 2 is created below.
 
-Side 2 — from `vpc-peer` to `vpc-lab05`:
+Side 2 — from `lab05-vpc-peer` to `lab05-vpc-main`:
 
 ```bash
-gcloud compute networks peerings create peering-peer-to-lab05 \
-  --network=vpc-peer \
+gcloud compute networks peerings create lab05-peering-peer-to-main \
+  --network=lab05-vpc-peer \
   --peer-project=${PROJECT_ID} \
-  --peer-network=vpc-lab05 \
+  --peer-network=lab05-vpc-main \
   --export-custom-routes \
   --import-custom-routes
 ```
@@ -812,20 +812,20 @@ gcloud compute networks peerings create peering-peer-to-lab05 \
 Check the peering status:
 
 ```bash
-gcloud compute networks peerings list --network=vpc-lab05
+gcloud compute networks peerings list --network=lab05-vpc-main
 ```
 
 Expected output:
 
 ```
 NAME                   NETWORK    PEER_PROJECT    PEER_NETWORK  STACK_TYPE  PEER_MTU  IMPORT_CUSTOM_ROUTES  EXPORT_CUSTOM_ROUTES  UPDATE_STRATEGY  STATE   STATE_DETAILS
-peering-lab05-to-peer  vpc-lab05  YOUR_PROJECT    vpc-peer      IPV4_ONLY             True                  True                  INDEPENDENT      ACTIVE  [...]: Connected.
+lab05-peering-main-to-peer  lab05-vpc-main  YOUR_PROJECT    lab05-vpc-peer      IPV4_ONLY             True                  True                  INDEPENDENT      ACTIVE  [...]: Connected.
 ```
 
 Both sides must show `ACTIVE`. Now test connectivity:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a \
   --command="ping -c 3 10.20.1.2"
 ```
 
@@ -846,28 +846,28 @@ Internal IPs now route between the two VPCs.
 
 Transitive peering is one of the most commonly tested VPC networking facts on the ACE exam. You will prove it fails.
 
-Create a third VPC peered only with `vpc-peer` (not with `vpc-lab05`):
+Create a third VPC peered only with `lab05-vpc-peer` (not with `lab05-vpc-main`):
 
 ```bash
-gcloud compute networks create vpc-third \
+gcloud compute networks create lab05-vpc-third \
   --subnet-mode=custom \
   --description="Lab 05 third VPC (transitive peering demo)"
 
-gcloud compute networks subnets create subnet-third \
-  --network=vpc-third \
+gcloud compute networks subnets create lab05-subnet-third \
+  --network=lab05-vpc-third \
   --region=us-central1 \
   --range=10.30.1.0/24
 
-gcloud compute firewall-rules create vpc-third-allow-icmp \
-  --network=vpc-third \
+gcloud compute firewall-rules create lab05-allow-third-icmp \
+  --network=lab05-vpc-third \
   --direction=INGRESS \
   --priority=1000 \
   --action=ALLOW \
   --rules=icmp \
   --source-ranges=10.0.0.0/8
 
-gcloud compute firewall-rules create vpc-third-allow-ssh \
-  --network=vpc-third \
+gcloud compute firewall-rules create lab05-allow-third-ssh \
+  --network=lab05-vpc-third \
   --direction=INGRESS \
   --priority=1000 \
   --action=ALLOW \
@@ -879,10 +879,10 @@ gcloud compute firewall-rules create vpc-third-allow-ssh \
 Launch an instance in the third VPC:
 
 ```bash
-gcloud compute instances create vm-third \
+gcloud compute instances create lab05-vm-third \
   --zone=us-central1-a \
   --machine-type=e2-micro \
-  --subnet=subnet-third \
+  --subnet=lab05-subnet-third \
   --tags=ssh-allowed \
   --image-family=debian-12 \
   --image-project=debian-cloud
@@ -892,43 +892,43 @@ Expected output:
 
 ```
 NAME      ZONE           MACHINE_TYPE  INTERNAL_IP  EXTERNAL_IP    STATUS
-vm-third  us-central1-a  e2-micro      10.30.1.2    34.ZZ.ZZ.ZZ    RUNNING
+lab05-vm-third  us-central1-a  e2-micro      10.30.1.2    34.ZZ.ZZ.ZZ    RUNNING
 ```
 
-Peer `vpc-peer` with `vpc-third` (both sides):
+Peer `lab05-vpc-peer` with `lab05-vpc-third` (both sides):
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 
-gcloud compute networks peerings create peering-peer-to-third \
-  --network=vpc-peer \
+gcloud compute networks peerings create lab05-peering-peer-to-third \
+  --network=lab05-vpc-peer \
   --peer-project=${PROJECT_ID} \
-  --peer-network=vpc-third
+  --peer-network=lab05-vpc-third
 
-gcloud compute networks peerings create peering-third-to-peer \
-  --network=vpc-third \
+gcloud compute networks peerings create lab05-peering-third-to-peer \
+  --network=lab05-vpc-third \
   --peer-project=${PROJECT_ID} \
-  --peer-network=vpc-peer
+  --peer-network=lab05-vpc-peer
 ```
 
 The peering topology now looks like this:
 
 ```
-vpc-lab05 (10.10.0.0/16)
+lab05-vpc-main (10.10.0.0/16)
     │
     │  peered
     │
-vpc-peer (10.20.0.0/16)
+lab05-vpc-peer (10.20.0.0/16)
     │
     │  peered
     │
-vpc-third (10.30.0.0/16)
+lab05-vpc-third (10.30.0.0/16)
 ```
 
-`vpc-lab05` is **not** directly peered with `vpc-third`. According to transitive peering rules, `vm-public` in `vpc-lab05` should not be able to reach `vm-third` in `vpc-third`. Prove it:
+`lab05-vpc-main` is **not** directly peered with `lab05-vpc-third`. According to transitive peering rules, `lab05-vm-public` in `lab05-vpc-main` should not be able to reach `lab05-vm-third` in `lab05-vpc-third`. Prove it:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a \
   --command="ping -c 3 -W 2 10.30.1.2"
 ```
 
@@ -941,12 +941,12 @@ PING 10.30.1.2 (10.30.1.2) 56(84) bytes of data.
 3 packets transmitted, 0 received, 100% packet loss
 ```
 
-`vm-public` cannot reach `vm-third` even though both are peered with `vpc-peer`. This is transitive peering — and it does not work.
+`lab05-vm-public` cannot reach `lab05-vm-third` even though both are peered with `lab05-vpc-peer`. This is transitive peering — and it does not work.
 
-Contrast this with `vm-peer`, which is **directly** in `vpc-peer` and has direct peerings with both networks:
+Contrast this with `lab05-vm-peer`, which is **directly** in `lab05-vpc-peer` and has direct peerings with both networks:
 
 ```bash
-gcloud compute ssh vm-peer --zone=us-central1-a \
+gcloud compute ssh lab05-vm-peer --zone=us-central1-a \
   --command="ping -c 3 10.30.1.2"
 ```
 
@@ -958,7 +958,7 @@ Expected output:
 64 bytes from 10.30.1.2: icmp_seq=3 ttl=64 time=1.41 ms
 ```
 
-`vm-peer` can reach `vm-third` because `vpc-peer` is directly peered with `vpc-third`.
+`lab05-vm-peer` can reach `lab05-vm-third` because `lab05-vpc-peer` is directly peered with `lab05-vpc-third`.
 
 > **ACE Exam Tip:** Transitive peering does not work. If you need A to talk to C and B is between them, you need a direct peering between A and C. At scale, use **Network Connectivity Center** (hub-and-spoke model) instead of a full mesh of peerings.
 
@@ -968,14 +968,14 @@ Expected output:
 
 Create a Cloud DNS private zone so your instances can resolve internal names like `db.internal.lab05` to internal IPs without using `/etc/hosts` on every VM.
 
-Create the private DNS zone, authorized for `vpc-lab05`:
+Create the private DNS zone, authorized for `lab05-vpc-main`:
 
 ```bash
 gcloud dns managed-zones create lab05-internal \
   --description="Lab 05 internal DNS zone" \
   --dns-name="internal.lab05." \
   --visibility=private \
-  --networks=vpc-lab05
+  --networks=lab05-vpc-main
 ```
 
 Expected output:
@@ -984,14 +984,14 @@ Expected output:
 Created [https://dns.googleapis.com/dns/v1/projects/.../managedZones/lab05-internal].
 ```
 
-Add an A record pointing `db.internal.lab05` to `vm-private`'s internal IP:
+Add an A record pointing `db.internal.lab05` to `lab05-vm-private`'s internal IP:
 
 ```bash
-VM_PRIVATE_IP=$(gcloud compute instances describe vm-private \
+VM_PRIVATE_IP=$(gcloud compute instances describe lab05-vm-private \
   --zone=us-central1-a \
   --format="get(networkInterfaces[0].networkIP)")
 
-echo "vm-private internal IP: ${VM_PRIVATE_IP}"
+echo "lab05-vm-private internal IP: ${VM_PRIVATE_IP}"
 
 gcloud dns record-sets create db.internal.lab05. \
   --zone=lab05-internal \
@@ -1007,10 +1007,10 @@ NAME                TYPE  TTL  DATA
 db.internal.lab05.  A     300  10.10.1.3
 ```
 
-Add a second A record pointing to `vm-public`'s internal IP:
+Add a second A record pointing to `lab05-vm-public`'s internal IP:
 
 ```bash
-VM_PUBLIC_INTERNAL_IP=$(gcloud compute instances describe vm-public \
+VM_PUBLIC_INTERNAL_IP=$(gcloud compute instances describe lab05-vm-public \
   --zone=us-central1-a \
   --format="get(networkInterfaces[0].networkIP)")
 
@@ -1039,17 +1039,17 @@ db.internal.lab05.  A     300    10.10.1.3
 
 Private DNS zones use `ns-gcp-private.googleapis.com` as their nameserver rather than the public-facing `ns-cloud-*.googledomains.com` nameservers used for public zones.
 
-Install `dnsutils` on `vm-public` so `nslookup` is available:
+Install `dnsutils` on `lab05-vm-public` so `nslookup` is available:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a \
   --command="sudo apt-get install -y -q dnsutils"
 ```
 
-Test DNS resolution from `vm-public` (which is in `vpc-lab05`, the authorized network):
+Test DNS resolution from `lab05-vm-public` (which is in `lab05-vpc-main`, the authorized network):
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a \
   --command="nslookup db.internal.lab05"
 ```
 
@@ -1064,12 +1064,12 @@ Name:   db.internal.lab05
 Address: 10.10.1.3
 ```
 
-`169.254.169.254` is the GCP metadata server — it acts as the DNS resolver for VMs and forwards to Cloud DNS. The A record resolved to `10.10.1.3` — the internal IP of `vm-private`.
+`169.254.169.254` is the GCP metadata server — it acts as the DNS resolver for VMs and forwards to Cloud DNS. The A record resolved to `10.10.1.3` — the internal IP of `lab05-vm-private`.
 
-Now verify the private zone is NOT visible from `vpc-peer` (a different, non-authorized VPC):
+Now verify the private zone is NOT visible from `lab05-vpc-peer` (a different, non-authorized VPC):
 
 ```bash
-gcloud compute ssh vm-peer --zone=us-central1-a \
+gcloud compute ssh lab05-vm-peer --zone=us-central1-a \
   --command="sudo apt-get install -y -q dnsutils && nslookup db.internal.lab05"
 ```
 
@@ -1097,7 +1097,7 @@ Create a dedicated service account for a hypothetical "backend" workload:
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 
-gcloud iam service-accounts create sa-backend \
+gcloud iam service-accounts create lab05-sa-backend \
   --display-name="Backend workload service account" \
   --description="Used for backend VM firewall targeting"
 ```
@@ -1105,45 +1105,45 @@ gcloud iam service-accounts create sa-backend \
 Expected output:
 
 ```
-Created service account [sa-backend].
+Created service account [lab05-sa-backend].
 ```
 
-Create a firewall rule that **only allows SSH to instances running as `sa-backend`**, regardless of tags:
+Create a firewall rule that **only allows SSH to instances running as `lab05-sa-backend`**, regardless of tags:
 
 ```bash
-gcloud compute firewall-rules create vpc-lab05-allow-ssh-sa-backend \
-  --network=vpc-lab05 \
+gcloud compute firewall-rules create lab05-allow-ssh-lab05-sa-backend \
+  --network=lab05-vpc-main \
   --direction=INGRESS \
   --priority=900 \
   --action=ALLOW \
   --rules=tcp:22 \
   --source-ranges=0.0.0.0/0 \
-  --target-service-accounts=sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
-  --description="Allow SSH to instances running as sa-backend"
+  --target-service-accounts=lab05-sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
+  --description="Allow SSH to instances running as lab05-sa-backend"
 ```
 
 Note `--priority=900` — higher priority than the tag-based rule (priority 1000). Service account rules and tag rules are independent; an instance can match one, both, or neither.
 
-Create an instance that runs as `sa-backend`. First, grant the SA the ability to create a VM:
+Create an instance that runs as `lab05-sa-backend`. First, grant the SA the ability to create a VM:
 
 ```bash
 # Allow the default compute SA to use this service account on VMs
 gcloud iam service-accounts add-iam-policy-binding \
-  sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
+  lab05-sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
   --member="serviceAccount:$(gcloud projects describe ${PROJECT_ID} \
       --format='get(projectNumber)')-compute@developer.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
 ```
 
-Create the instance running as `sa-backend` and with **no network tags**:
+Create the instance running as `lab05-sa-backend` and with **no network tags**:
 
 ```bash
-gcloud compute instances create vm-backend \
+gcloud compute instances create lab05-vm-backend \
   --zone=us-central1-a \
   --machine-type=e2-micro \
-  --subnet=subnet-private \
+  --subnet=lab05-subnet-private \
   --no-address \
-  --service-account=sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
+  --service-account=lab05-sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
   --scopes=cloud-platform \
   --image-family=debian-12 \
   --image-project=debian-cloud
@@ -1153,13 +1153,13 @@ Expected output:
 
 ```
 NAME        ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP  STATUS
-vm-backend  us-central1-a  e2-micro                   10.10.1.4                 RUNNING
+lab05-vm-backend  us-central1-a  e2-micro                   10.10.1.4                 RUNNING
 ```
 
 No external IP, no tags. Yet the firewall rule allows SSH **because of its service account**. Verify by checking which rules would apply to this instance:
 
 ```bash
-gcloud compute instances describe vm-backend \
+gcloud compute instances describe lab05-vm-backend \
   --zone=us-central1-a \
   --format="get(serviceAccounts[0].email)"
 ```
@@ -1167,18 +1167,18 @@ gcloud compute instances describe vm-backend \
 Expected output:
 
 ```
-sa-backend@YOUR_PROJECT.iam.gserviceaccount.com
+lab05-sa-backend@YOUR_PROJECT.iam.gserviceaccount.com
 ```
 
 Inspect all effective firewall rules for this instance:
 
 ```bash
-gcloud compute instances describe vm-backend \
+gcloud compute instances describe lab05-vm-backend \
   --zone=us-central1-a \
   --format="table(name, networkInterfaces[0].network.basename())"
 
 gcloud compute firewall-rules list \
-  --filter="network:vpc-lab05" \
+  --filter="network:lab05-vpc-main" \
   --format="table(name,direction,priority,action,targetServiceAccounts,targetTags,allowed[].map().firewall_rule().list():label=ALLOW)"
 ```
 
@@ -1186,18 +1186,18 @@ Expected output (showing the SA-targeted rule):
 
 ```
 NAME                              DIRECTION  PRIORITY  ACTION  TARGET_SERVICE_ACCOUNTS           ALLOWED
-vpc-lab05-allow-internal-icmp     INGRESS    1000      ALLOW                                     icmp
-vpc-lab05-allow-ssh               INGRESS    1000      ALLOW                                     tcp:22
-vpc-lab05-allow-ssh-sa-backend    INGRESS    900       ALLOW   sa-backend@PROJECT.iam...         tcp:22
+lab05-allow-internal-icmp     INGRESS    1000      ALLOW                                     icmp
+lab05-allow-ssh               INGRESS    1000      ALLOW                                     tcp:22
+lab05-allow-ssh-lab05-sa-backend    INGRESS    900       ALLOW   lab05-sa-backend@PROJECT.iam...         tcp:22
 ```
 
 **Demonstrate the security advantage.** Create a second instance with the `ssh-allowed` tag but a different service account — it gets SSH access via the tag rule. Then remove the tag — now it has no SSH access. With SA-based rules, you cannot accidentally grant SSH by adding a tag because the rule targets a SA that only Google controls assignment of.
 
 ```bash
-gcloud compute instances create vm-notag-nobackend \
+gcloud compute instances create lab05-vm-notag-nobackend \
   --zone=us-central1-a \
   --machine-type=e2-micro \
-  --subnet=subnet-private \
+  --subnet=lab05-subnet-private \
   --no-address \
   --image-family=debian-12 \
   --image-project=debian-cloud
@@ -1206,11 +1206,11 @@ gcloud compute instances create vm-notag-nobackend \
 This instance has no external IP, no tags, and the default compute SA. Neither the tag-based SSH rule nor the SA-based SSH rule applies to it. Prove it:
 
 ```bash
-VM_NOTAG_IP=$(gcloud compute instances describe vm-notag-nobackend \
+VM_NOTAG_IP=$(gcloud compute instances describe lab05-vm-notag-nobackend \
   --zone=us-central1-a \
   --format="get(networkInterfaces[0].networkIP)")
 
-gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+gcloud compute ssh lab05-vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${VM_NOTAG_IP}"
 ```
 
@@ -1258,17 +1258,17 @@ PROJECT_ID=$(gcloud config get-value project)
 BUCKET_NAME="lab05-pga-test-${PROJECT_ID}"
 
 # Delete VM instances
-gcloud compute instances delete vm-public vm-private vm-peer vm-backend vm-third vm-notag-nobackend \
+gcloud compute instances delete lab05-vm-public lab05-vm-private lab05-vm-peer lab05-vm-backend lab05-vm-third lab05-vm-notag-nobackend \
   --zone=us-central1-a \
   --quiet
 
 # Delete Cloud NAT and Cloud Router
-gcloud compute routers nats delete nat-lab05 \
-  --router=router-lab05 \
+gcloud compute routers nats delete lab05-nat \
+  --router=lab05-router \
   --region=us-central1 \
   --quiet
 
-gcloud compute routers delete router-lab05 \
+gcloud compute routers delete lab05-router \
   --region=us-central1 \
   --quiet
 
@@ -1284,59 +1284,59 @@ gcloud dns record-sets delete app.internal.lab05. \
 gcloud dns managed-zones delete lab05-internal --quiet
 
 # Delete VPC peering connections
-gcloud compute networks peerings delete peering-lab05-to-peer \
-  --network=vpc-lab05 \
+gcloud compute networks peerings delete lab05-peering-main-to-peer \
+  --network=lab05-vpc-main \
   --quiet
 
-gcloud compute networks peerings delete peering-peer-to-lab05 \
-  --network=vpc-peer \
+gcloud compute networks peerings delete lab05-peering-peer-to-main \
+  --network=lab05-vpc-peer \
   --quiet
 
-gcloud compute networks peerings delete peering-peer-to-third \
-  --network=vpc-peer \
+gcloud compute networks peerings delete lab05-peering-peer-to-third \
+  --network=lab05-vpc-peer \
   --quiet
 
-gcloud compute networks peerings delete peering-third-to-peer \
-  --network=vpc-third \
+gcloud compute networks peerings delete lab05-peering-third-to-peer \
+  --network=lab05-vpc-third \
   --quiet
 
 # Delete firewall rules
 gcloud compute firewall-rules delete \
-  vpc-lab05-allow-ssh \
-  vpc-lab05-allow-internal-icmp \
-  vpc-lab05-allow-ssh-sa-backend \
-  vpc-peer-allow-icmp \
-  vpc-peer-allow-ssh \
-  vpc-third-allow-icmp \
-  vpc-third-allow-ssh \
+  lab05-allow-ssh \
+  lab05-allow-internal-icmp \
+  lab05-allow-ssh-lab05-sa-backend \
+  lab05-allow-peer-icmp \
+  lab05-allow-peer-ssh \
+  lab05-allow-third-icmp \
+  lab05-allow-third-ssh \
   --quiet
 
 # Delete subnets
-gcloud compute networks subnets delete subnet-private \
+gcloud compute networks subnets delete lab05-subnet-private \
   --region=us-central1 \
   --quiet
 
-gcloud compute networks subnets delete subnet-east \
+gcloud compute networks subnets delete lab05-subnet-east \
   --region=us-east1 \
   --quiet
 
-gcloud compute networks subnets delete subnet-peer \
+gcloud compute networks subnets delete lab05-subnet-peer \
   --region=us-central1 \
   --quiet
 
-gcloud compute networks subnets delete subnet-third \
+gcloud compute networks subnets delete lab05-subnet-third \
   --region=us-central1 \
   --quiet
 
 # Delete VPC networks
-gcloud compute networks delete vpc-lab05 vpc-peer vpc-third --quiet
+gcloud compute networks delete lab05-vpc-main lab05-vpc-peer lab05-vpc-third --quiet
 
 # Delete GCS bucket
 gcloud storage rm --recursive gs://${BUCKET_NAME}
 
 # Delete service account
 gcloud iam service-accounts delete \
-  sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
+  lab05-sa-backend@${PROJECT_ID}.iam.gserviceaccount.com \
   --quiet
 ```
 
