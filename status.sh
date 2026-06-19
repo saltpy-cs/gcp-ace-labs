@@ -43,6 +43,20 @@ gcloud compute networks list --filter="name~'^${PREFIX}'" 2>/dev/null
 echo "=== Subnets ==="
 gcloud compute networks subnets list --filter="name~'^${PREFIX}'" 2>/dev/null
 
+echo "=== VPC Peerings ==="
+gcloud compute networks list --filter="name~'^${PREFIX}'" --format="value(name)" 2>/dev/null | \
+  xargs -I{} gcloud compute networks peerings list --network={} 2>/dev/null
+
+echo "=== Cloud NAT Configs ==="
+gcloud compute routers list --filter="name~'^${PREFIX}'" --format="value(name,region)" 2>/dev/null | \
+  while read name region; do
+    gcloud compute routers nats list --router="$name" --region="$region" 2>/dev/null
+  done
+
+echo "=== Subnet Private Google Access ==="
+gcloud compute networks subnets list --filter="name~'^${PREFIX}'" \
+  --format="table(name,region,privateIpGoogleAccess)" 2>/dev/null
+
 echo "=== Cloud Routers ==="
 gcloud compute routers list --filter="name~'^${PREFIX}'" 2>/dev/null
 
@@ -63,6 +77,10 @@ gcloud compute addresses list --filter="name~'^${PREFIX}'" 2>/dev/null
 
 echo "=== DNS Managed Zones ==="
 gcloud dns managed-zones list --filter="name~'^${PREFIX}'" 2>/dev/null
+
+echo "=== DNS Record Sets ==="
+gcloud dns managed-zones list --filter="name~'^${PREFIX}'" --format="value(name)" 2>/dev/null | \
+  xargs -I{} gcloud dns record-sets list --zone={} 2>/dev/null
 
 # Containers
 echo "=== GKE Clusters ==="
