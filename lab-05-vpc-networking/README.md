@@ -369,6 +369,16 @@ gcloud compute instances create vm-public \
   --image-project=debian-cloud
 ```
 
+You may see this warning:
+
+```
+WARNING: Some requests generated warnings:
+ - You are creating a global DNS VM. VM instances using global DNS are vulnerable
+   to cross-regional outages...
+```
+
+This is expected and safe to ignore in a lab. By default, VMs use global DNS, meaning their internal hostnames are resolvable across all regions. GCP recommends zonal DNS for production workloads because it isolates hostname resolution to the zone — a regional outage cannot affect DNS lookups in other zones. For this lab it makes no difference.
+
 Expected output:
 
 ```
@@ -462,10 +472,19 @@ PING 10.10.1.3 (10.10.1.3) 56(84) bytes of data.
 64 bytes from 10.10.1.3: icmp_seq=3 ttl=64 time=1.01 ms
 ```
 
-Now verify that the private instance cannot reach the internet. SSH to the public instance and jump to the private instance. First, copy your SSH key to the bastion so it can forward auth to the private instance, or use IAP tunneling:
+Now verify that the private instance cannot reach the internet. You will use vm-public as a bastion to reach vm-private using SSH agent forwarding — this allows vm-public to authenticate to vm-private using your local private key without copying it onto the bastion.
+
+Agent forwarding requires the key to already be loaded in your local SSH agent. `gcloud compute ssh` does not do this automatically, so load it first:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a
+# On your local machine
+ssh-add ~/.ssh/google_compute_engine
+```
+
+Then SSH to vm-public with agent forwarding enabled:
+
+```bash
+gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A"
 ```
 
 From inside vm-public, SSH to vm-private using its internal IP:
@@ -538,7 +557,7 @@ Creating NAT [nat-lab05] in router [router-lab05]...done.
 Wait about 30 seconds for NAT to propagate, then test from the private instance. The Cloud NAT gateway takes a moment to become active after creation.
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl --max-time 15 -s -o /dev/null -w \"%{http_code}\" https://example.com'"
 ```
 
@@ -553,7 +572,7 @@ HTTP 200 — the private instance reached the internet through Cloud NAT. The pu
 Verify what external IP the private instance appears to use:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl -s https://ifconfig.me'"
 ```
 
@@ -591,15 +610,17 @@ gcloud compute routers nats delete nat-lab05 \
 Verify the private instance cannot reach the internet again:
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
+gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
   --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl --max-time 10 -s -o /dev/null -w \"%{http_code}\" https://example.com'"
 ```
 
 Expected output:
 
 ```
-curl: (28) Connection timed out after 10001 milliseconds
+000
 ```
+
+`000` is curl's HTTP code when the connection times out before any response is received — confirmation that the private instance has no internet route.
 
 Good — no internet. Now enable Private Google Access on the subnet:
 
@@ -639,30 +660,23 @@ gcloud storage buckets create gs://${BUCKET_NAME} \
   --location=us-central1 \
   --uniform-bucket-level-access
 
-echo "Private Google Access works!" | gcloud storage cp - gs://${BUCKET_NAME}/test.txt
+echo 'Private Google Access works!' | gcloud storage cp - gs://${BUCKET_NAME}/test.txt
 ```
 
 Now verify the private instance can access GCS using its service account (it has no external IP and NAT is disabled):
 
 ```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
-  --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl -s -H \"Authorization: Bearer \$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token -H Metadata-Flavor:Google | python3 -c \"import sys,json;print(json.load(sys.stdin)[\\\"access_token\\\"])\" )\" https://storage.googleapis.com/storage/v1/b/${BUCKET_NAME}/o/test.txt'"
+gcloud compute ssh vm-public --zone=us-central1-a --ssh-flag="-A" \
+  --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'gcloud storage cat gs://${BUCKET_NAME}/test.txt'"
 ```
 
-Alternatively, use `gcloud storage` directly from the private instance (simpler):
-
-```bash
-gcloud compute ssh vm-public --zone=us-central1-a \
-  --command="ssh -o StrictHostKeyChecking=no 10.10.1.3 'curl -s -o /dev/null -w \"%{http_code}\" \"https://storage.googleapis.com/storage/v1/b/${BUCKET_NAME}/o?prefix=test\"'"
-```
-
-Expected output (unauthenticated list returns 401, but the TCP connection succeeded — proving PGA routes the traffic):
+Expected output:
 
 ```
-401
+Private Google Access works!
 ```
 
-A 401 proves TCP connectivity to `storage.googleapis.com` succeeded. The private instance reached a Google API without an external IP and without Cloud NAT.
+`gcloud` on the private instance authenticates automatically using the attached service account — no token extraction needed. The file was fetched from GCS without an external IP and without Cloud NAT, proving PGA routes the traffic through Google's internal backbone.
 
 > **ACE Exam Tip:** PGA works because GCP's internal routing redirects traffic destined for `*.googleapis.com` IP ranges (199.36.153.0/24, 199.36.152.0/24) via Google's internal backbone when PGA is enabled. It never leaves Google's network.
 
@@ -767,11 +781,22 @@ gcloud compute networks peerings create peering-lab05-to-peer \
   --import-custom-routes
 ```
 
-Expected output:
+Expected output (the full network object in YAML, truncated here for brevity):
 
 ```
-Created [https://...networks/vpc-lab05/peerings/peering-lab05-to-peer].
+Updated [https://www.googleapis.com/compute/v1/projects/.../networks/vpc-lab05].
+---
+...
+peerings:
+- ...
+  name: peering-lab05-to-peer
+  network: https://.../networks/vpc-peer
+  state: INACTIVE
+  stateDetails: '[...]: Waiting for peer network to connect.'
+...
 ```
+
+The peering shows `INACTIVE` — this is expected. VPC peering requires both sides to create the connection. The state will become `ACTIVE` once side 2 is created below.
 
 Side 2 — from `vpc-peer` to `vpc-lab05`:
 
@@ -793,8 +818,8 @@ gcloud compute networks peerings list --network=vpc-lab05
 Expected output:
 
 ```
-NAME                    NETWORK    PEER_PROJECT    PEER_NETWORK  STATE   STATE_DETAILS
-peering-lab05-to-peer   vpc-lab05  YOUR_PROJECT    vpc-peer      ACTIVE  [2024-...]: Connection ...
+NAME                   NETWORK    PEER_PROJECT    PEER_NETWORK  STACK_TYPE  PEER_MTU  IMPORT_CUSTOM_ROUTES  EXPORT_CUSTOM_ROUTES  UPDATE_STRATEGY  STATE   STATE_DETAILS
+peering-lab05-to-peer  vpc-lab05  YOUR_PROJECT    vpc-peer      IPV4_ONLY             True                  True                  INDEPENDENT      ACTIVE  [...]: Connected.
 ```
 
 Both sides must show `ACTIVE`. Now test connectivity:
