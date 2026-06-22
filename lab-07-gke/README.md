@@ -562,7 +562,7 @@ An HPA automatically adjusts the replica count based on observed metrics. Create
 kubectl autoscale deployment lab07-web \
   --min=2 \
   --max=10 \
-  --cpu-percent=50
+  --cpu=50%
 ```
 
 Expected output:
