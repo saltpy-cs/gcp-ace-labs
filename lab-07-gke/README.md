@@ -1130,10 +1130,14 @@ kubectl run wi-test-no-sa \
 
 Expected output (permission denied — no identity):
 ```
-AccessDeniedException: 403 lab07-wi-test@... does not have storage.objects.get access to the Google Cloud Storage object.
+ERROR: (gcloud.storage.cat) HTTPError 403: Caller does not have storage.objects.get access
+to the Google Cloud Storage object.
+...
+pod "wi-test-no-sa" deleted from default namespace
+pod default/wi-test-no-sa terminated (Error)
 ```
 
-This confirms that Workload Identity is what granted access — not ambient credentials or open GCS permissions.
+The `(Error)` exit is expected — the pod failing is the point. This confirms that Workload Identity is what granted access in the previous step, not ambient credentials or open GCS permissions.
 
 > **ACE exam tip:** Workload Identity requires three things: (1) cluster created with `--workload-pool`, (2) KSA annotated with `iam.gke.io/gcp-service-account`, (3) GSA granted `roles/iam.workloadIdentityUser` for the KSA member. Missing any one of these three steps means the pod falls back to the node's default service account, which typically has no application permissions.
 
