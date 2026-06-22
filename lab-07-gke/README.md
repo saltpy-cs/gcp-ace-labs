@@ -535,7 +535,7 @@ deployment.apps/lab07-web scaled
 Watch the new pods come up:
 
 ```bash
-kubectl get pods -l app=lab07-web
+kubectl get pods -l app=lab07-web --watch
 ```
 
 Expected output:
