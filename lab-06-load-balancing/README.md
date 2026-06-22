@@ -789,12 +789,11 @@ gcloud compute instance-groups managed list-instances lab06-web-mig \
   --format="table(name,zone,status)"
 ```
 
-The autoscaler from exercise 5 blocks manual resizing. Pause it first:
+The autoscaler from exercise 5 blocks manual resizing. Remove it first:
 
 ```bash
-gcloud compute instance-groups managed set-autoscaling lab06-web-mig \
+gcloud compute instance-groups managed stop-autoscaling lab06-web-mig \
   --region="${REGION}" \
-  --mode=OFF \
   --project="${PROJECT_ID}"
 ```
 
@@ -861,7 +860,10 @@ gcloud compute instance-groups managed wait-until lab06-web-mig \
 
 gcloud compute instance-groups managed set-autoscaling lab06-web-mig \
   --region="${REGION}" \
-  --mode=ON \
+  --min-num-replicas=2 \
+  --max-num-replicas=5 \
+  --target-cpu-utilization=0.60 \
+  --cool-down-period=60 \
   --project="${PROJECT_ID}"
 ```
 
