@@ -446,26 +446,17 @@ Expected output:
 Deleted [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/zones/us-central1-a/instances/lab06-web-mig-xxxx].
 ```
 
-Now watch the MIG notice the instance count dropped below target and create a replacement.
-Poll the MIG status every few seconds:
+Watch the MIG notice the instance count dropped below target and create a replacement.
+Ctrl+C once both instances show `RUNNING`:
 
 ```bash
-# Run this a few times over the next 60-90 seconds
-gcloud compute instance-groups managed list-instances lab06-web-mig \
-  --region="${REGION}" \
-  --project="${PROJECT_ID}" \
-  --format="table(name,zone,status,instanceStatus,currentAction)"
+watch -n 5 "gcloud compute instance-groups managed list-instances lab06-web-mig \
+  --region=${REGION} \
+  --project=${PROJECT_ID} \
+  --format='table(name,zone,status,instanceStatus,currentAction)'"
 ```
 
-You will see the MIG cycle through states:
-
-```
-NAME                 ZONE           STATUS    INSTANCE_STATUS  CURRENT_ACTION
-lab06-web-mig-yyyy   us-central1-b  RUNNING   RUNNING          NONE
-lab06-web-mig-zzzz   us-central1-a  STAGING   STAGING          CREATING
-```
-
-After ~90 seconds both instances should be `RUNNING`:
+You will see the MIG cycle through states before settling:
 
 ```
 NAME                 ZONE           STATUS   INSTANCE_STATUS  CURRENT_ACTION
