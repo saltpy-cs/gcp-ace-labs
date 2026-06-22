@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab07-configmap-demo
+  labels:
+    app: lab07-configmap-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab07-configmap-demo
+  template:
+    metadata:
+      labels:
+        app: lab07-configmap-demo
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: lab07-app-config
+        volumeMounts:
+        - name: config-volume
+          mountPath: /usr/share/nginx/html/welcome.html
+          subPath: welcome.html
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+      volumes:
+      - name: config-volume
+        configMap:
+          name: lab07-app-config

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab07-app-config
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+  MAX_CONNECTIONS: "100"
+  welcome.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><title>Lab 07 - GKE</title></head>
+    <body>
+    <h1>Hello from GKE!</h1>
+    <p>Environment: production</p>
+    <p>Configured via ConfigMap</p>
+    </body>
+    </html>

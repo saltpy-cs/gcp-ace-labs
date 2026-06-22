@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab07-web
+  labels:
+    app: lab07-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lab07-web
+  template:
+    metadata:
+      labels:
+        app: lab07-web
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"

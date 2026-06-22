@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab07-impossible
+  labels:
+    app: lab07-impossible
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab07-impossible
+  template:
+    metadata:
+      labels:
+        app: lab07-impossible
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.25
+        resources:
+          requests:
+            cpu: "64"
+            memory: "256Gi"

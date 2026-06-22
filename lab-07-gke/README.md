@@ -375,36 +375,7 @@ A Kubernetes **Deployment** declares the desired state for a set of pods: which 
 Create a Deployment that runs three replicas of a simple nginx web server:
 
 ```bash
-kubectl apply -f - <<'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: lab07-web
-  labels:
-    app: lab07-web
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: lab07-web
-  template:
-    metadata:
-      labels:
-        app: lab07-web
-    spec:
-      containers:
-      - name: web
-        image: nginx:1.25
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "250m"
-            memory: "256Mi"
-EOF
+kubectl apply -f lab07-web-deployment.yaml
 ```
 
 Expected output:
@@ -482,20 +453,7 @@ A `ClusterIP` Service (the default) makes the pods reachable only inside the clu
 Create the LoadBalancer Service:
 
 ```bash
-kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: Service
-metadata:
-  name: lab07-web-svc
-spec:
-  selector:
-    app: lab07-web
-  type: LoadBalancer
-  ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-EOF
+kubectl apply -f lab07-web-svc.yaml
 ```
 
 Expected output:
@@ -664,26 +622,7 @@ A ConfigMap decouples configuration from the container image. Instead of baking 
 Create a ConfigMap with application settings:
 
 ```bash
-kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: lab07-app-config
-data:
-  APP_ENV: "production"
-  LOG_LEVEL: "info"
-  MAX_CONNECTIONS: "100"
-  welcome.html: |
-    <!DOCTYPE html>
-    <html>
-    <head><title>Lab 07 - GKE</title></head>
-    <body>
-    <h1>Hello from GKE!</h1>
-    <p>Environment: production</p>
-    <p>Configured via ConfigMap</p>
-    </body>
-    </html>
-EOF
+kubectl apply -f lab07-app-config.yaml
 ```
 
 Expected output:
@@ -721,44 +660,7 @@ welcome.html:
 Now create a Deployment that consumes the ConfigMap two ways: as environment variables (for the key-value pairs) and as a mounted file (for `welcome.html`):
 
 ```bash
-kubectl apply -f - <<'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: lab07-configmap-demo
-  labels:
-    app: lab07-configmap-demo
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: lab07-configmap-demo
-  template:
-    metadata:
-      labels:
-        app: lab07-configmap-demo
-    spec:
-      containers:
-      - name: web
-        image: nginx:1.25
-        ports:
-        - containerPort: 80
-        envFrom:
-        - configMapRef:
-            name: lab07-app-config
-        volumeMounts:
-        - name: config-volume
-          mountPath: /usr/share/nginx/html/welcome.html
-          subPath: welcome.html
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-      volumes:
-      - name: config-volume
-        configMap:
-          name: lab07-app-config
-EOF
+kubectl apply -f lab07-configmap-demo-deployment.yaml
 ```
 
 Expected output:
@@ -866,35 +768,7 @@ This confirms that base64 is encoding, not encryption. Anyone with `kubectl get 
 Create a pod that consumes the Secret both as environment variables and as volume-mounted files:
 
 ```bash
-kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: Pod
-metadata:
-  name: lab07-secret-demo
-spec:
-  containers:
-  - name: demo
-    image: busybox:1.36
-    command: ["sleep", "3600"]
-    env:
-    - name: DB_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: lab07-db-secret
-          key: DB_PASSWORD
-    volumeMounts:
-    - name: secret-volume
-      mountPath: /etc/secrets
-      readOnly: true
-    resources:
-      requests:
-        cpu: "50m"
-        memory: "64Mi"
-  volumes:
-  - name: secret-volume
-    secret:
-      secretName: lab07-db-secret
-EOF
+kubectl apply -f lab07-secret-demo-pod.yaml
 ```
 
 Expected output:
@@ -1202,25 +1076,7 @@ Operation completed over 1 objects/30.0 B.
 Create a pod that uses the annotated KSA. The pod will call `gsutil cat` to read the file — and it will work without any key file, just by running as the annotated service account:
 
 ```bash
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name: lab07-wi-test
-  namespace: default
-spec:
-  serviceAccountName: lab07-ksa
-  containers:
-  - name: test
-    image: google/cloud-sdk:slim
-    command: ["sleep", "3600"]
-    resources:
-      requests:
-        cpu: "100m"
-        memory: "256Mi"
-  nodeSelector:
-    iam.gke.io/gke-metadata-server-enabled: "true"
-EOF
+kubectl apply -f lab07-wi-test-pod.yaml
 ```
 
 Wait for the pod to start:
@@ -1289,31 +1145,7 @@ gcloud container clusters get-credentials lab07-autopilot \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 
-kubectl apply -f - <<'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: lab07-impossible
-  labels:
-    app: lab07-impossible
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: lab07-impossible
-  template:
-    metadata:
-      labels:
-        app: lab07-impossible
-    spec:
-      containers:
-      - name: web
-        image: nginx:1.25
-        resources:
-          requests:
-            cpu: "64"
-            memory: "256Gi"
-EOF
+kubectl apply -f lab07-impossible-deployment.yaml
 ```
 
 Expected output:

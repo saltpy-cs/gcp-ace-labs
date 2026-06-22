@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lab07-wi-test
+  namespace: default
+spec:
+  serviceAccountName: lab07-ksa
+  containers:
+  - name: test
+    image: google/cloud-sdk:slim
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+  nodeSelector:
+    iam.gke.io/gke-metadata-server-enabled: "true"
