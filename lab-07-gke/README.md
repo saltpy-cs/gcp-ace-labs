@@ -286,8 +286,20 @@ autopilot:
   enabled: true
 name: lab07-autopilot
 networkConfig:
+  datapathProvider: ADVANCED_DATAPATH
+  dnsConfig:
+    clusterDns: CLOUD_DNS
+    clusterDnsDomain: cluster.local
+    clusterDnsScope: CLUSTER_SCOPE
+  enableIntraNodeVisibility: true
+  gatewayApiConfig:
+    channel: CHANNEL_STANDARD
   network: projects/YOUR_PROJECT/global/networks/default
+  serviceExternalIpsConfig: {}
   subnetwork: projects/YOUR_PROJECT/regions/us-central1/subnetworks/default
+privateClusterConfig:
+  privateEndpoint: 10.x.x.x
+  publicEndpoint: x.x.x.x
 status: RUNNING
 ```
 
