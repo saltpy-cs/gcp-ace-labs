@@ -789,7 +789,16 @@ gcloud compute instance-groups managed list-instances lab06-web-mig \
   --format="table(name,zone,status)"
 ```
 
-Resize the MIG down to 1 instance. The MIG will delete one instance and consolidate
+The autoscaler from exercise 5 blocks manual resizing. Pause it first:
+
+```bash
+gcloud compute instance-groups managed set-autoscaling lab06-web-mig \
+  --region="${REGION}" \
+  --mode=OFF \
+  --project="${PROJECT_ID}"
+```
+
+Now resize the MIG down to 1 instance. The MIG will delete one instance and consolidate
 capacity into a single zone:
 
 ```bash
@@ -837,7 +846,7 @@ traffic to the available zone. This happened with zero downtime because the glob
 HTTP(S) LB health checks continuously probe each backend and drain traffic from
 failing backends before removing them from rotation.
 
-Restore the original size before proceeding:
+Restore the original size and re-enable the autoscaler before proceeding:
 
 ```bash
 gcloud compute instance-groups managed resize lab06-web-mig \
@@ -848,6 +857,11 @@ gcloud compute instance-groups managed resize lab06-web-mig \
 gcloud compute instance-groups managed wait-until lab06-web-mig \
   --stable \
   --region="${REGION}" \
+  --project="${PROJECT_ID}"
+
+gcloud compute instance-groups managed set-autoscaling lab06-web-mig \
+  --region="${REGION}" \
+  --mode=ON \
   --project="${PROJECT_ID}"
 ```
 
