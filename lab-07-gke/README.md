@@ -336,9 +336,9 @@ kubectl cluster-info
 
 Expected output:
 ```
-Kubernetes control plane is running at https://34.xxx.xxx.xxx
-GLBCDefaultBackend is running at https://34.xxx.xxx.xxx/api/v1/namespaces/kube-system/services/default-http-backend:http/proxy
-KubeDNS is running at https://34.xxx.xxx.xxx/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Kubernetes control plane is running at https://xx.xxx.xxx.xxx
+GLBCDefaultBackend is running at https://xx.xxx.xxx.xxx/api/v1/namespaces/kube-system/services/default-http-backend:http/proxy
+KubeDNS is running at https://xx.xxx.xxx.xxx/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 ```
 
 Check that the cluster nodes are visible (Autopilot shows system nodes):
