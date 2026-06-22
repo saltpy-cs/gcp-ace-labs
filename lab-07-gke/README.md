@@ -1062,23 +1062,23 @@ bindings:
 
 ```bash
 # Create a bucket
-gsutil mb -p "${PROJECT_ID}" -l "${REGION}" "gs://lab07-wi-test-${PROJECT_ID}"
+gcloud storage buckets create "gs://lab07-wi-test-${PROJECT_ID}" \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}"
 
 # Upload a test file
-echo "Hello from Workload Identity!" | gsutil cp - "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
+echo "Hello from Workload Identity!" | gcloud storage cp - "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
 ```
 
 Expected output:
 ```
 Creating gs://lab07-wi-test-YOUR_PROJECT/...
-Copying from <stdin>...
-/ [1 files][   30.0 B/   30.0 B]
-Operation completed over 1 objects/30.0 B.
+Completed files 1/1 | 30.0B/30.0B
 ```
 
 #### Step 9e — Run a Pod That Reads GCS Using Workload Identity
 
-Create a pod that uses the annotated KSA. The pod will call `gsutil cat` to read the file — and it will work without any key file, just by running as the annotated service account:
+Create a pod that uses the annotated KSA. The pod will call `gcloud storage cat` to read the file — and it will work without any key file, just by running as the annotated service account:
 
 ```bash
 kubectl apply -f lab07-wi-test-pod.yaml
@@ -1093,7 +1093,7 @@ kubectl wait pod lab07-wi-test --for=condition=ready --timeout=180s
 Now exec into the pod and read the GCS file. No service account key file is present — the pod authenticates via Workload Identity:
 
 ```bash
-kubectl exec lab07-wi-test -- gsutil cat "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
+kubectl exec lab07-wi-test -- gcloud storage cat "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
 ```
 
 Expected output:
@@ -1116,7 +1116,7 @@ ACTIVE  ACCOUNT
 
 The pod is authenticated as the GCP service account without any key file — only the Workload Identity binding.
 
-Now intentionally break it: try running the same gsutil command from a pod WITHOUT the annotated service account:
+Now intentionally break it: try running the same command from a pod WITHOUT the annotated service account:
 
 ```bash
 kubectl run wi-test-no-sa \
@@ -1124,7 +1124,7 @@ kubectl run wi-test-no-sa \
   --restart=Never \
   --rm \
   -it \
-  --command -- gsutil cat "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
+  --command -- gcloud storage cat "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
 ```
 
 Expected output (permission denied — no identity):
@@ -1277,7 +1277,7 @@ gcloud container clusters delete lab07-autopilot \
   --project="${PROJECT_ID}"
 
 echo "=== Deleting GCS bucket ==="
-gsutil -m rm -r "gs://lab07-wi-test-${PROJECT_ID}" 2>/dev/null || echo "Bucket already deleted or does not exist."
+gcloud storage rm --recursive "gs://lab07-wi-test-${PROJECT_ID}" 2>/dev/null || echo "Bucket already deleted or does not exist."
 
 echo "=== Deleting GCP Service Account ==="
 gcloud iam service-accounts delete \
