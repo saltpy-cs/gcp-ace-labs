@@ -702,12 +702,18 @@ watch -n 10 "gcloud compute backend-services get-health lab06-backend-service \
 Expected output once healthy:
 
 ```yaml
+backend: https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1/instanceGroups/lab06-web-mig
 status:
   healthStatus:
   - healthState: HEALTHY
-    instance: https://.../instances/lab06-web-mig-xxxx
+    instance: https://.../zones/us-central1-a/instances/lab06-web-mig-xxxx
+    ipAddress: 10.128.0.x
+    port: 80
   - healthState: HEALTHY
-    instance: https://.../instances/lab06-web-mig-yyyy
+    instance: https://.../zones/us-central1-b/instances/lab06-web-mig-yyyy
+    ipAddress: 10.128.0.y
+    port: 80
+  kind: compute#backendServiceGroupHealth
 ```
 
 Get the load balancer IP and test it:
