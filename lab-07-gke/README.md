@@ -986,13 +986,15 @@ NAME            LOCATION       MASTER_VERSION  MASTER_IP       MACHINE_TYPE  NUM
 lab07-standard  us-central1-a  1.29.x-gke.xxx  34.xxx.xxx.xxx  e2-medium     2          RUNNING
 ```
 
-Get credentials for the new cluster:
+Switch kubectl context to the new cluster:
 
 ```bash
 gcloud container clusters get-credentials lab07-standard \
   --zone="${ZONE}" \
   --project="${PROJECT_ID}"
 ```
+
+All `kubectl` commands from here through Step 9e target `lab07-standard`.
 
 #### Step 9b — Create a GCP Service Account and Grant GCS Access
 
