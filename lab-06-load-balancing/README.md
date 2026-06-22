@@ -496,7 +496,7 @@ gcloud compute instance-groups managed set-autoscaling lab06-web-mig \
 
 Expected output:
 ```
-Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1/autoscalers/lab06-web-mig].
+Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1/autoscalers/lab06-web-mig-XXXX].
 ---
 autoscalingPolicy:
   coolDownPeriodSec: 60
@@ -505,6 +505,14 @@ autoscalingPolicy:
   maxNumReplicas: 5
   minNumReplicas: 2
   mode: ON
+creationTimestamp: '...'
+id: '...'
+kind: compute#autoscaler
+name: lab06-web-mig-XXXX
+region: https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1
+selfLink: https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1/autoscalers/lab06-web-mig-XXXX
+status: ACTIVE
+target: https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1/instanceGroupManagers/lab06-web-mig
 ```
 
 Describe the autoscaler to see its current recommendation:
