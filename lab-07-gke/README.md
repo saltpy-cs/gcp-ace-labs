@@ -1143,11 +1143,11 @@ The `(Error)` exit is expected — the pod failing is the point. This confirms t
 
 ---
 
-### Exercise 10 — Deliberate Failure: What Happens When a Deployment Has No Resources
+### Exercise 10 — Deliberate Failure: Autopilot Resource Limits
 
-This exercise intentionally causes a scheduling failure to teach you how to diagnose it. On Autopilot, scheduling failures are the most common cause of `Pending` pods.
+This exercise intentionally exceeds Autopilot's per-pod resource limits to show how GKE rejects invalid workloads at admission time.
 
-Create a Deployment with resource requests that cannot be satisfied — requesting 64 CPUs on a cluster with 2 e2-medium nodes (each has 2 vCPUs):
+Autopilot enforces hard limits per pod (30 vCPUs, 110Gi memory). The manifest requests 64 CPUs and 256Gi — both over the limit. Switch back to Autopilot and try to apply it:
 
 ```bash
 # Switch back to the Autopilot cluster context
@@ -1158,40 +1158,19 @@ gcloud container clusters get-credentials lab07-autopilot \
 kubectl apply -f lab07-impossible-deployment.yaml
 ```
 
-Expected output:
+Expected output (the apply itself is rejected):
 ```
-deployment.apps/lab07-impossible created
-```
-
-On Autopilot, GKE may reject the pod at admission before creating it, so `kubectl get pods` may return "No resources found." Describe the deployment to see what happened:
-
-```bash
-kubectl describe deployment lab07-impossible
-```
-
-Look for the `Conditions` and `Events` sections. You should see a scheduling or resource rejection message:
-
-```
-Conditions:
-  Type             Status  Reason
-  ----             ------  ------
-  Available        False   MinimumReplicasUnavailable
-  ReplicaFailure   True    FailedCreate
-...
-Events:
-  Warning  FailedCreate  ...  replicaset-controller  Error creating: pods "lab07-impossible-..." is
-           forbidden: exceeded max allowed CPU request per pod
+Error from server (GKE Warden constraints violations): error when creating "lab07-impossible-deployment.yaml":
+admission webhook "warden-validating.common-webhooks.networking.gke.io" denied the request:
+GKE Warden rejected the request because it violates one or more constraints.
+Violations details: {"[denied by autogke-pod-limit-constraints]":
+  ["Total cpu requested by containers for workload 'lab07-impossible' is higher than the Autopilot maximum of '30'.",
+   "Total memory requested by containers for workload 'lab07-impossible' is higher than the Autopilot maximum of '110Gi'."]}
 ```
 
-The scheduler (or Autopilot admission controller) tells you exactly why the pod cannot be placed: 64 CPUs exceeds the maximum allowed per pod on Autopilot.
+The admission webhook rejects the Deployment before it is created — no pod is ever scheduled. This is different from a Standard cluster where the Deployment would be created but pods would sit `Pending` waiting for a node with sufficient resources.
 
-Clean up the broken Deployment:
-
-```bash
-kubectl delete deployment lab07-impossible
-```
-
-> **ACE exam tip:** `Pending` pods are almost always caused by one of three things: (1) insufficient resources — fix by reducing requests or adding node capacity; (2) node selector / taint mismatch — no node matches the pod's scheduling constraints; (3) PersistentVolumeClaim not bound — the pod is waiting for storage. Always start debugging with `kubectl describe pod` and read the `Events` section.
+> **ACE exam tip:** On Autopilot, oversized workloads are rejected at apply time with a clear error. On Standard clusters, they are accepted but pods stay `Pending` — always start debugging with `kubectl describe pod` and read the `Events` section for the scheduling failure reason.
 
 ---
 
