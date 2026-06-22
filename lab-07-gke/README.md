@@ -582,11 +582,10 @@ NAME        REFERENCE              TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
 lab07-web   Deployment/lab07-web   0%/50%    2         10        3          30s
 ```
 
-`TARGETS` shows `0%/50%` — current CPU is 0% (idle nginx pods), target is 50%. Since actual usage is below target, the HPA will eventually scale down to `MINPODS=2`:
+`TARGETS` shows `0%/50%` — current CPU is 0% (idle nginx pods), target is 50%. Since actual usage is below target, the HPA will scale down to `MINPODS=2` after the default 5-minute stabilization window (which prevents thrashing). Watch until `REPLICAS` drops to 2, then Ctrl+C:
 
 ```bash
-# Wait ~3-5 minutes and check again
-kubectl get hpa lab07-web
+watch -n 15 kubectl get hpa lab07-web
 ```
 
 Expected output after scale-in:
