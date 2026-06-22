@@ -228,26 +228,11 @@ gcloud compute instance-templates create lab06-web-template \
   --image-project=debian-cloud \
   --network=default \
   --tags=http-server \
-  --metadata=startup-script='#!/bin/bash
-apt-get update -y
-apt-get install -y nginx
-INSTANCE_NAME=$(curl -sf "http://metadata.google.internal/computeMetadata/v1/instance/name" -H "Metadata-Flavor: Google")
-ZONE=$(curl -sf "http://metadata.google.internal/computeMetadata/v1/instance/zone" -H "Metadata-Flavor: Google" | awk -F/ "{print \$NF}")
-cat > /var/www/html/index.html <<EOF
-<!DOCTYPE html>
-<html>
-<head><title>Lab 06 - Load Balancing</title></head>
-<body>
-<h1>Hello from ${INSTANCE_NAME}</h1>
-<p>Zone: ${ZONE}</p>
-<p>Served by: nginx on Compute Engine (MIG)</p>
-</body>
-</html>
-EOF
-systemctl enable nginx
-systemctl start nginx' \
+  --metadata-from-file=startup-script=startup-script-v1.sh \
   --project="${PROJECT_ID}"
 ```
+
+> Run this command from the `lab-06-load-balancing/` directory so that `startup-script-v1.sh` resolves correctly. The script source is at [`startup-script-v1.sh`](./startup-script-v1.sh).
 
 Verify the template was created:
 
@@ -925,26 +910,11 @@ gcloud compute instance-templates create lab06-web-template-v2 \
   --image-project=debian-cloud \
   --network=default \
   --tags=http-server \
-  --metadata=startup-script='#!/bin/bash
-apt-get update -y
-apt-get install -y nginx
-INSTANCE_NAME=$(curl -sf "http://metadata.google.internal/computeMetadata/v1/instance/name" -H "Metadata-Flavor: Google")
-ZONE=$(curl -sf "http://metadata.google.internal/computeMetadata/v1/instance/zone" -H "Metadata-Flavor: Google" | awk -F/ "{print \$NF}")
-cat > /var/www/html/index.html <<EOF
-<!DOCTYPE html>
-<html>
-<head><title>Lab 06 - v2</title></head>
-<body style="background-color:#e8f5e9">
-<h1>Hello from ${INSTANCE_NAME} [v2]</h1>
-<p>Zone: ${ZONE}</p>
-<p>Version: 2.0 - Green deployment</p>
-</body>
-</html>
-EOF
-systemctl enable nginx
-systemctl start nginx' \
+  --metadata-from-file=startup-script=startup-script-v2.sh \
   --project="${PROJECT_ID}"
 ```
+
+> Run this command from the `lab-06-load-balancing/` directory so that `startup-script-v2.sh` resolves correctly. The script source is at [`startup-script-v2.sh`](./startup-script-v2.sh).
 
 #### Step 9b — Start a Canary Rollout
 
