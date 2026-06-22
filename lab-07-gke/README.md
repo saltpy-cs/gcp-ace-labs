@@ -1073,7 +1073,8 @@ echo 'Hello from Workload Identity!' | gcloud storage cp - "gs://lab07-wi-test-$
 Expected output:
 ```
 Creating gs://lab07-wi-test-YOUR_PROJECT/...
-Completed files 1/1 | 30.0B/30.0B
+Copying file://- to gs://lab07-wi-test-YOUR_PROJECT/hello.txt
+  ...
 ```
 
 #### Step 9e — Run a Pod That Reads GCS Using Workload Identity
