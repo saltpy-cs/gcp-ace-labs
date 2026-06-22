@@ -1076,14 +1076,14 @@ gcloud compute backend-services delete lab06-backend-service \
   --quiet \
   --project="${PROJECT_ID}"
 
-echo "=== Deleting health check ==="
-gcloud compute health-checks delete lab06-health-check \
-  --quiet \
-  --project="${PROJECT_ID}"
-
 echo "=== Deleting MIG ==="
 gcloud compute instance-groups managed delete lab06-web-mig \
   --region="${REGION}" \
+  --quiet \
+  --project="${PROJECT_ID}"
+
+echo "=== Deleting health check ==="
+gcloud compute health-checks delete lab06-health-check \
   --quiet \
   --project="${PROJECT_ID}"
 
