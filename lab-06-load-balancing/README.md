@@ -726,8 +726,7 @@ LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
   --format="value(address)" \
   --project="${PROJECT_ID}")
 
-echo "Testing load balancer at: http://${LB_IP}"
-curl -s "http://${LB_IP}"
+curl http://$LB_IP
 ```
 
 Expected output (shows instance name and zone from the startup script):
@@ -749,9 +748,8 @@ is stateless and the LB uses round-robin by default, you should see responses fr
 different instances and zones:
 
 ```bash
-# Send 10 requests and capture the instance name from each response
 for i in $(seq 1 10); do
-  curl -s "http://${LB_IP}" | grep "Hello from"
+  curl http://$LB_IP | grep "Hello from"
 done
 ```
 
@@ -827,7 +825,7 @@ LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
   --project="${PROJECT_ID}")
 
 for i in $(seq 1 6); do
-  curl -s "http://${LB_IP}" | grep "Zone:"
+  curl http://$LB_IP | grep "Zone:"
 done
 ```
 
@@ -931,7 +929,7 @@ LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
   --project="${PROJECT_ID}")
 
 for i in $(seq 1 8); do
-  curl -s "http://${LB_IP}" | grep -E "(Hello from|Version)"
+  curl http://$LB_IP | grep -E "(Hello from|Version)"
 done
 ```
 
@@ -966,7 +964,7 @@ Verify all responses now show v2:
 
 ```bash
 for i in $(seq 1 6); do
-  curl -s "http://${LB_IP}" | grep -E "(Hello from|Version)"
+  curl http://$LB_IP | grep -E "(Hello from|Version)"
 done
 ```
 
