@@ -1113,28 +1113,6 @@ echo "=== Cleanup complete ==="
 Verify nothing remains:
 
 ```bash
-echo "--- MIGs ---"
-gcloud compute instance-groups managed list \
-  --filter="name:lab06" \
-  --project="${PROJECT_ID}"
-
-echo "--- Instance templates ---"
-gcloud compute instance-templates list \
-  --filter="name:lab06" \
-  --project="${PROJECT_ID}"
-
-echo "--- Backend services ---"
-gcloud compute backend-services list \
-  --filter="name:lab06" \
-  --global \
-  --project="${PROJECT_ID}"
-
-echo "--- Forwarding rules ---"
-gcloud compute forwarding-rules list \
-  --filter="name:lab06" \
-  --global \
-  --project="${PROJECT_ID}"
-
 ../status.sh 6
 ```
 
