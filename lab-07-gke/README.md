@@ -681,15 +681,21 @@ Exec into the pod to verify the environment variables and mounted file:
 POD_NAME=$(kubectl get pod -l app=lab07-configmap-demo -o jsonpath='{.items[0].metadata.name}')
 
 # Check environment variables
-kubectl exec "${POD_NAME}" -- env | grep -E "^(APP_ENV|LOG_LEVEL|MAX_CONNECTIONS)"
+kubectl exec "${POD_NAME}" -- env | grep -E "^(APP_ENV|LOG_LEVEL|MAX_CONNECTIONS|welcome)"
 ```
 
 Expected output:
 ```
-APP_ENV=production
 LOG_LEVEL=info
 MAX_CONNECTIONS=100
+welcome.html=<!DOCTYPE html>
+<html>
+<head><title>Lab 07 - GKE</title></head>
+...
+APP_ENV=production
 ```
+
+> **Note:** `welcome.html` appears as an env var because `envFrom: configMapRef` injects every key in the ConfigMap — including file contents. In practice, keep file-content keys in a separate ConfigMap from key-value config, or inject files only via volume mounts.
 
 ```bash
 # Check the mounted file
