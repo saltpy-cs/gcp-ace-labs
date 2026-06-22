@@ -892,8 +892,7 @@ Expected output:
 ```
 REVISION  CHANGE-CAUSE
 1         <none>
-2         <none>
-3         upgraded nginx to 1.26
+2         upgraded nginx to 1.26
 ```
 
 Inspect a specific revision:
