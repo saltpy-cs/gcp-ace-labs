@@ -1163,37 +1163,27 @@ Expected output:
 deployment.apps/lab07-impossible created
 ```
 
-Check the pod status — it will be stuck `Pending`:
+On Autopilot, GKE may reject the pod at admission before creating it, so `kubectl get pods` may return "No resources found." Describe the deployment to see what happened:
 
 ```bash
-kubectl get pods -l app=lab07-impossible
+kubectl describe deployment lab07-impossible
 ```
 
-Expected output:
-```
-NAME                              READY   STATUS    RESTARTS   AGE
-lab07-impossible-xxxxxxxxx-yyyyy  0/1     Pending   0          30s
-```
+Look for the `Conditions` and `Events` sections. You should see a scheduling or resource rejection message:
 
-Describe the pod to see the scheduling failure reason:
-
-```bash
-POD_NAME=$(kubectl get pod -l app=lab07-impossible -o jsonpath='{.items[0].metadata.name}')
-kubectl describe pod "${POD_NAME}"
 ```
-
-Expected output (partial — look for the Events section):
-```
+Conditions:
+  Type             Status  Reason
+  ----             ------  ------
+  Available        False   MinimumReplicasUnavailable
+  ReplicaFailure   True    FailedCreate
+...
 Events:
-  Type     Reason            Age   From               Message
-  ----     ------            ----  ----               -------
-  Warning  FailedScheduling  30s   default-scheduler  0/3 nodes are available:
-           3 Insufficient cpu, 3 Insufficient memory.
-           preemption: 0/3 nodes are available:
-           3 No preemption victims found for incoming pod.
+  Warning  FailedCreate  ...  replicaset-controller  Error creating: pods "lab07-impossible-..." is
+           forbidden: exceeded max allowed CPU request per pod
 ```
 
-The scheduler tells you exactly why the pod cannot be placed: no node has 64 CPU and 256Gi memory available. On Autopilot, even though nodes are provisioned on demand, there is a maximum pod size limit — Autopilot pods cannot exceed the limits of a single node (max `n2-standard-32` equivalent).
+The scheduler (or Autopilot admission controller) tells you exactly why the pod cannot be placed: 64 CPUs exceeds the maximum allowed per pod on Autopilot.
 
 Clean up the broken Deployment:
 
