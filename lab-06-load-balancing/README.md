@@ -719,6 +719,8 @@ status:
 Get the load balancer IP and test it:
 
 ```bash
+PROJECT_ID=$(gcloud config get-value project)
+
 LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
   --global \
   --format="value(address)" \
