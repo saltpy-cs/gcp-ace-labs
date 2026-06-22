@@ -689,29 +689,17 @@ gcloud compute url-maps describe lab06-url-map \
 The load balancer takes 2–3 minutes to fully propagate after creation. Global anycast IP
 provisioning is not instantaneous — GCP needs to program its edge points of presence.
 
-Wait for the backend service to report healthy backends:
+Watch the backend service until both instances show `HEALTHY` (takes 2–3 minutes), then Ctrl+C:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 
-# Poll backend health — wait for HEALTHY status
-gcloud compute backend-services get-health lab06-backend-service \
+watch -n 10 "gcloud compute backend-services get-health lab06-backend-service \
   --global \
-  --project="${PROJECT_ID}"
+  --project=${PROJECT_ID}"
 ```
 
-Initially you may see `UNKNOWN` or `UNHEALTHY` while the LB warms up:
-
-```yaml
----
-backend: https://www.googleapis.com/compute/v1/projects/.../instanceGroups/lab06-web-mig
-status:
-  healthStatus:
-  - healthState: UNKNOWN
-    instance: https://.../instances/lab06-web-mig-xxxx
-```
-
-After 2–3 minutes it should show `HEALTHY`:
+Expected output once healthy:
 
 ```yaml
 status:
