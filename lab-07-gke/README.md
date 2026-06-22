@@ -1267,21 +1267,6 @@ gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
 echo "=== Cleanup complete ==="
 ```
 
-Verify no clusters remain:
-
-```bash
-gcloud container clusters list \
-  --filter="name:lab07" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output (empty):
-```
-Listed 0 items.
-```
-
-Verify the GCS bucket is deleted:
-
 ```bash
 ../status.sh 7
 ```
