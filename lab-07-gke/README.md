@@ -1067,7 +1067,7 @@ gcloud storage buckets create "gs://lab07-wi-test-${PROJECT_ID}" \
   --project="${PROJECT_ID}"
 
 # Upload a test file
-echo "Hello from Workload Identity!" | gcloud storage cp - "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
+echo 'Hello from Workload Identity!' | gcloud storage cp - "gs://lab07-wi-test-${PROJECT_ID}/hello.txt"
 ```
 
 Expected output:
