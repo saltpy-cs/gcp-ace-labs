@@ -418,7 +418,7 @@ REGION="us-central1"
 INSTANCE_TO_DELETE=$(gcloud compute instance-groups managed list-instances lab06-web-mig \
   --region="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="value(instance)" | head -1)
+  --format="value(name)" | head -1)
 
 echo "Will delete: ${INSTANCE_TO_DELETE}"
 ```
