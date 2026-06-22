@@ -251,11 +251,6 @@ Also create a firewall rule to allow HTTP traffic to VMs with the `http-server` 
 you do not already have one from lab 02 or lab 05):
 
 ```bash
-# Check if rule already exists
-gcloud compute firewall-rules list --filter="name=default-allow-http" \
-  --format="table(name,direction,allowed[].map().firewall_rule().list())"
-
-# Create only if it does not exist
 gcloud compute firewall-rules create default-allow-http \
   --direction=INGRESS \
   --priority=1000 \
