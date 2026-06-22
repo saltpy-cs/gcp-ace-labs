@@ -294,33 +294,17 @@ NAME           LOCATION     SCOPE   BASE_INSTANCE_NAME  SIZE  TARGET_SIZE  INSTA
 lab06-web-mig  us-central1  region  lab06-web-mig       0     2            lab06-web-template  no
 ```
 
-The `SIZE` starts at 0 and climbs to `TARGET_SIZE` as GCP provisions the VMs. Wait for
-all instances to reach `RUNNING` status:
+The `SIZE` starts at 0 and climbs to `TARGET_SIZE` as GCP provisions the VMs. Watch
+instance status until both show `RUNNING` (takes ~60-90 seconds), then Ctrl+C:
 
 ```bash
-# Poll until all instances are RUNNING (takes ~60-90 seconds)
-gcloud compute instance-groups managed wait-until lab06-web-mig \
-  --stable \
-  --region="${REGION}" \
-  --project="${PROJECT_ID}"
+watch -n 5 "gcloud compute instance-groups managed list-instances lab06-web-mig \
+  --region=${REGION} \
+  --project=${PROJECT_ID} \
+  --format='table(name,zone,status,instanceStatus)'"
 ```
 
-Expected output:
-```
-Waiting for group to become stable, current operations: creating: 2
-Group is stable
-```
-
-List the instances in the MIG to see their zones:
-
-```bash
-gcloud compute instance-groups managed list-instances lab06-web-mig \
-  --region="${REGION}" \
-  --project="${PROJECT_ID}" \
-  --format="table(name,zone,status,instanceStatus)"
-```
-
-Expected output:
+Expected output once stable:
 ```
 NAME                 ZONE           STATUS   INSTANCE_STATUS
 lab06-web-mig-xxxx   us-central1-a  RUNNING  RUNNING
