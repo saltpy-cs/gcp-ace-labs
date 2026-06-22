@@ -266,7 +266,7 @@ This command takes 3–5 minutes. GKE provisions the control plane, enables Work
 ```
 Creating cluster lab07-autopilot in us-central1...done.
 NAME              LOCATION     MASTER_VERSION   MASTER_IP      MACHINE_TYPE   NODE_VERSION   NUM_NODES  STATUS
-lab07-autopilot   us-central1  1.29.x-gke.xxxx  34.xxx.xxx.xxx  e2-small       1.29.x-gke.x   3          RUNNING
+lab07-autopilot   us-central1  1.29.x-gke.xxxx  xx.xxx.xxx.xxx  e2-small       1.29.x-gke.x   3          RUNNING
 ```
 
 The `NUM_NODES` shown is a floor — Autopilot reports some baseline nodes but scales them dynamically based on your pod requests. You are not charged for idle nodes.
