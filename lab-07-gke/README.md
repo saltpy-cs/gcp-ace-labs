@@ -877,7 +877,6 @@ deployment.apps/lab07-web
 REVISION  CHANGE-CAUSE
 1         <none>
 2         <none>
-3         <none>
 ```
 
 The `CHANGE-CAUSE` column is empty because we did not annotate the rollout with a reason. In production, use `--record` (deprecated) or annotate the Deployment with `kubernetes.io/change-cause`:
