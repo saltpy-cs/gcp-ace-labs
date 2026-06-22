@@ -774,8 +774,8 @@ You should see responses alternating between your two instances in different zon
 
 ### Exercise 8 — Simulate a Zone Failure
 
-Real zone failures are rare but impactful. This exercise simulates one by setting the
-per-zone instance count to zero for one zone, forcing all traffic onto the surviving zone.
+Real zone failures are rare but impactful. This exercise simulates one by resizing the
+MIG down to a single instance, forcing all traffic onto the surviving zone.
 
 First check how many instances are in each zone:
 
@@ -789,34 +789,26 @@ gcloud compute instance-groups managed list-instances lab06-web-mig \
   --format="table(name,zone,status)"
 ```
 
-Now use `set-target-pools` — actually you will resize the MIG to simulate zone depletion
-by abandoning the instances in one zone. The cleaner approach is to use
-`resize-advanced` to pin a zone to zero:
+Resize the MIG down to 1 instance. The MIG will delete one instance and consolidate
+capacity into a single zone:
 
 ```bash
-# Set us-central1-a to 0 instances, keep us-central1-b at 2
-# This simulates losing an entire zone
-gcloud compute instance-groups managed resize-advanced lab06-web-mig \
-  --region="${REGION}" \
-  --target-size-per-zone="us-central1-a=0,us-central1-b=2" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-Updated [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/regions/us-central1/instanceGroupManagers/lab06-web-mig].
-```
-
-Wait for the resize to complete:
-
-```bash
-gcloud compute instance-groups managed wait-until lab06-web-mig \
-  --stable \
+gcloud compute instance-groups managed resize lab06-web-mig \
+  --size=1 \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
 
-Now test the load balancer — all traffic should be routed to `us-central1-b` only:
+Watch until stable, then note which zone the surviving instance is in:
+
+```bash
+watch -n 5 "gcloud compute instance-groups managed list-instances lab06-web-mig \
+  --region=${REGION} \
+  --project=${PROJECT_ID} \
+  --format='table(name,zone,status,instanceStatus)'"
+```
+
+Now test the load balancer — all traffic should route to the single surviving zone:
 
 ```bash
 LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
@@ -829,28 +821,28 @@ for i in $(seq 1 6); do
 done
 ```
 
-Expected output — all responses from `us-central1-b`:
+Expected output — all responses from a single zone:
 
 ```
-<p>Zone: us-central1-b</p>
-<p>Zone: us-central1-b</p>
-<p>Zone: us-central1-b</p>
-<p>Zone: us-central1-b</p>
-<p>Zone: us-central1-b</p>
-<p>Zone: us-central1-b</p>
+<p>Zone: us-central1-a</p>
+<p>Zone: us-central1-a</p>
+<p>Zone: us-central1-a</p>
+<p>Zone: us-central1-a</p>
+<p>Zone: us-central1-a</p>
+<p>Zone: us-central1-a</p>
 ```
 
-The load balancer automatically detected that `us-central1-a` has no healthy backends and
-routed all traffic to the available zone. This happened with zero downtime because the
-global HTTP(S) LB health checks continuously probe each backend and drain traffic from
+The load balancer automatically detected the reduced backend capacity and routed all
+traffic to the available zone. This happened with zero downtime because the global
+HTTP(S) LB health checks continuously probe each backend and drain traffic from
 failing backends before removing them from rotation.
 
-Restore the original distribution before proceeding:
+Restore the original size before proceeding:
 
 ```bash
-gcloud compute instance-groups managed resize-advanced lab06-web-mig \
+gcloud compute instance-groups managed resize lab06-web-mig \
+  --size=2 \
   --region="${REGION}" \
-  --target-size-per-zone="us-central1-a=1,us-central1-b=1" \
   --project="${PROJECT_ID}"
 
 gcloud compute instance-groups managed wait-until lab06-web-mig \
