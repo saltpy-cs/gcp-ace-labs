@@ -749,7 +749,7 @@ different instances and zones:
 
 ```bash
 for i in $(seq 1 10); do
-  curl http://$LB_IP | grep "Hello from"
+  curl -s http://$LB_IP | grep "Hello from"
 done
 ```
 
@@ -825,7 +825,7 @@ LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
   --project="${PROJECT_ID}")
 
 for i in $(seq 1 6); do
-  curl http://$LB_IP | grep "Zone:"
+  curl -s http://$LB_IP | grep "Zone:"
 done
 ```
 
@@ -929,7 +929,7 @@ LB_IP=$(gcloud compute addresses describe lab06-lb-ip \
   --project="${PROJECT_ID}")
 
 for i in $(seq 1 8); do
-  curl http://$LB_IP | grep -E "(Hello from|Version)"
+  curl -s http://$LB_IP | grep -E "(Hello from|Version)"
 done
 ```
 
@@ -964,7 +964,7 @@ Verify all responses now show v2:
 
 ```bash
 for i in $(seq 1 6); do
-  curl http://$LB_IP | grep -E "(Hello from|Version)"
+  curl -s http://$LB_IP | grep -E "(Hello from|Version)"
 done
 ```
 
