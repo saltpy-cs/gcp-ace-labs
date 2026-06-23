@@ -13,7 +13,7 @@ def get_db_connection():
     db_socket = os.environ.get("DB_SOCKET", "/cloudsql")
     instance_connection = os.environ.get("INSTANCE_CONNECTION_NAME", "")
 
-    unix_socket = f"{db_socket}/{instance_connection}"
+    unix_socket = f"{db_socket}/{instance_connection}/.s.PGSQL.5432"
 
     conn = pg8000.native.Connection(
         user=db_user,
