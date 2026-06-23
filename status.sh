@@ -6,9 +6,7 @@ PREFIX=${LAB:+$(printf "lab%02d-" "$LAB")}
 PREFIX=${PREFIX:-"lab"}
 
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
-ZONE=$(gcloud config get-value compute/zone 2>/dev/null)
-REGION=$(gcloud config get-value compute/region 2>/dev/null)
-REGION=${REGION:-$(echo "$ZONE" | sed 's/-[a-z]$//')}
+REGION=${2:-us-central1}
 
 echo "=== Project: $PROJECT_ID | Filter: ${PREFIX}* ==="
 echo ""
