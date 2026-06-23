@@ -410,19 +410,20 @@ latency-sensitive workloads (payment processing, interactive APIs) this is unacc
 The solution is minimum instances, which you will configure in exercise 4.
 
 You can also observe cold starts in Cloud Logging. Cloud Run logs a `"starting container"`
-message when it initialises a new instance:
+message when it initialises a new instance. These appear as structured logs so query
+against `jsonPayload.message`:
 
 ```bash
 gcloud logging read \
-  'resource.type="cloud_run_revision" AND textPayload:"starting container"' \
+  'resource.type="cloud_run_revision" AND jsonPayload.message:"starting container"' \
   --project="${PROJECT_ID}" \
   --limit=5 \
-  --format="table(timestamp,resource.labels.revision_name,textPayload)"
+  --format="table(timestamp,resource.labels.revision_name,jsonPayload.message)"
 ```
 
 Expected output:
 ```
-TIMESTAMP                      REVISION_NAME           TEXT_PAYLOAD
+TIMESTAMP                      REVISION_NAME           MESSAGE
 2024-01-15T10:23:41.123456789Z lab08-hello-00001-xyz   starting container
 ```
 
