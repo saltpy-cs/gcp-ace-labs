@@ -998,11 +998,8 @@ V1_VERSION=$(gcloud app versions list \
 
 echo "V1 version: ${V1_VERSION}"
 
-# Update the app to version 2
-sed -i 's/VERSION: "1.0"/VERSION: "2.0"/' /tmp/lab08-appengine/app.yaml
-
-# Deploy but do not promote to receive traffic yet
-gcloud app deploy /tmp/lab08-appengine/app.yaml \
+# Deploy v2 but do not promote to receive traffic yet
+gcloud app deploy appengine-v2/app.yaml \
   --project="${PROJECT_ID}" \
   --no-promote \
   --quiet
