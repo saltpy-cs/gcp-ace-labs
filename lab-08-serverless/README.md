@@ -359,26 +359,18 @@ This exercise measures that penalty. First, force the service to scale down by w
 for it to go idle, or by deploying with `--min-instances=0` (the default):
 
 ```bash
-PROJECT_ID=$(gcloud config get-value project)
-REGION="us-central1"
-
-SERVICE_URL=$(gcloud run services describe lab08-hello \
-  --region="${REGION}" \
-  --format="value(status.url)" \
-  --project="${PROJECT_ID}")
-
 # Ensure the service can scale to zero (required to observe cold starts)
 gcloud run services update lab08-hello \
   --region="${REGION}" \
   --min-instances=0 \
   --project="${PROJECT_ID}"
+```
 
-# Wait 5 minutes with no traffic so the service scales to zero
-echo "Waiting 5 minutes for the service to scale to zero..."
-sleep 300
-# Then time a request to observe the cold start
-echo "Sending cold-start request..."
-time curl -s -o /dev/null -w "HTTP %{http_code} — Total time: %{time_total}s\n" "${SERVICE_URL}"
+Rather than blindly sleeping, use the helper script which polls until the service has actually scaled to zero and then fires the timed request automatically:
+
+```bash
+chmod +x observe-cold-start.sh
+./observe-cold-start.sh
 ```
 
 Expected output (cold start — first request after idle):
