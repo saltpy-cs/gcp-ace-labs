@@ -1414,16 +1414,16 @@ gcloud pubsub topics delete lab08-events \
   --quiet \
   --project="${PROJECT_ID}"
 
-echo "=== Stopping App Engine versions ==="
-# List all versions and stop them
+echo "=== Deleting App Engine versions ==="
+# Automatic scaling versions cannot be stopped — they must be deleted
 ALL_VERSIONS=$(gcloud app versions list \
   --service=default \
   --project="${PROJECT_ID}" \
   --format="value(id)")
 
 for VERSION in ${ALL_VERSIONS}; do
-  echo "Stopping App Engine version: ${VERSION}"
-  gcloud app versions stop "${VERSION}" \
+  echo "Deleting App Engine version: ${VERSION}"
+  gcloud app versions delete "${VERSION}" \
     --service=default \
     --project="${PROJECT_ID}" \
     --quiet
@@ -1435,10 +1435,19 @@ SA_EMAIL="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
 gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
   --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/cloudsql.client"
+  --role="roles/cloudsql.client" \
+  --format="none"
 
-echo "=== Cleaning up local temp files ==="
-rm -rf /tmp/lab08-function-http /tmp/lab08-function-pubsub /tmp/lab08-appengine /tmp/lab08-cloudsql
+echo "=== Deleting Artifact Registry repositories ==="
+gcloud artifacts repositories delete lab08 \
+  --location="${REGION}" \
+  --quiet \
+  --project="${PROJECT_ID}" 2>/dev/null || echo "lab08 repository not found."
+
+gcloud artifacts repositories delete cloud-run-source-deploy \
+  --location="${REGION}" \
+  --quiet \
+  --project="${PROJECT_ID}" 2>/dev/null || echo "cloud-run-source-deploy repository not found."
 
 echo "=== Cleanup complete ==="
 ```
@@ -1472,20 +1481,8 @@ gcloud pubsub topics list \
 ../status.sh 8
 ```
 
-All sections should be empty (App Engine stopped versions remain visible but are not billable).
+All sections should be empty.
 
-> **Note on App Engine:** You cannot delete an App Engine application once created. You can
-> only stop or disable versions. The application itself persists in your project. If you
-> want to stop all App Engine billing, stop all versions as shown above — stopped App Engine
-> versions have no compute cost.
->
-> **Note on Artifact Registry:** Cloud Build creates container images in Artifact Registry
-> when you use `--source` with Cloud Run or deploy Cloud Functions. These images are very
-> small and incur negligible storage costs (fractions of a cent per month), but if you want
-> to clean them up completely:
-> ```bash
-> gcloud artifacts repositories delete cloud-run-source-deploy \
->   --location="${REGION}" \
->   --quiet \
->   --project="${PROJECT_ID}" 2>/dev/null || echo "Repository not found or already deleted."
-> ```
+> **Note on App Engine:** You cannot delete an App Engine application once created — the
+> application itself persists in your project. Deleting all versions (as the cleanup script
+> does) removes all compute cost.
