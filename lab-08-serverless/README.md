@@ -906,21 +906,23 @@ gcloud app deploy appengine/app.yaml \
 Expected output (takes 2–3 minutes for the first deploy):
 ```
 Services to deploy:
-  descriptor:      [/tmp/lab08-appengine/app.yaml]
-  source:          [/tmp/lab08-appengine]
-  target project:  [YOUR_PROJECT]
-  target service:  [default]
-  target version:  [20240115t103000]
-  target url:      [https://YOUR_PROJECT.appspot.com]
+
+descriptor:             [/path/to/lab-08-serverless/appengine/app.yaml]
+source:                 [/path/to/lab-08-serverless/appengine]
+target project:         [YOUR_PROJECT]
+target service:         [default]
+target version:         [20240115t103000]
+target url:             [https://YOUR_PROJECT.uc.r.appspot.com]
+target service account: [YOUR_PROJECT@appspot.gserviceaccount.com]
+
 
 Beginning deployment of service [default]...
 Created .gcloudignore file. See `gcloud topic gcloudignore` for details.
 ╔════════════════════════════════════════════════════════════╗
-╠═ Uploading 3 files to Google Cloud Storage                ═╣
+╠═ Uploading 4 files to Google Cloud Storage                ═╣
 ╚════════════════════════════════════════════════════════════╝
 File upload done.
-Updating service [default]...done.
-Deployed service [default] to [https://YOUR_PROJECT.appspot.com]
+Waiting for operation [apps/YOUR_PROJECT/operations/operation-...]
 ```
 
 Test the application:
