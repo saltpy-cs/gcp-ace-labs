@@ -804,38 +804,8 @@ Created topic [projects/YOUR_PROJECT/topics/lab08-events].
 Write the Pub/Sub function. It receives a base64-encoded message body and logs the decoded
 content:
 
-```bash
-mkdir -p /tmp/lab08-function-pubsub
-cat > /tmp/lab08-function-pubsub/main.py << 'PYEOF'
-import functions_framework
-import base64
-import json
-import logging
-
-@functions_framework.cloud_event
-def handle_event(cloud_event):
-    """Pub/Sub Cloud Function: logs incoming event data."""
-    # The Pub/Sub message data is base64-encoded in the CloudEvent
-    message_data = base64.b64decode(
-        cloud_event.data["message"]["data"]
-    ).decode("utf-8")
-
-    try:
-        payload = json.loads(message_data)
-        logging.info(f"Received structured event: {json.dumps(payload, indent=2)}")
-        print(f"Processed event: type={payload.get('type', 'unknown')}, "
-              f"value={payload.get('value', 'N/A')}")
-    except json.JSONDecodeError:
-        logging.info(f"Received plain text event: {message_data}")
-        print(f"Processed plain message: {message_data}")
-PYEOF
-
-cat > /tmp/lab08-function-pubsub/requirements.txt << 'EOF'
-functions-framework==3.*
-EOF
-```
-
-Deploy the function with a Pub/Sub trigger via Eventarc:
+The function source is in the `function-pubsub/` directory of this repository.
+Deploy it with a Pub/Sub trigger via Eventarc:
 
 ```bash
 REGION="us-central1"
@@ -844,7 +814,7 @@ gcloud functions deploy lab08-event-handler \
   --gen2 \
   --runtime=python311 \
   --region="${REGION}" \
-  --source=/tmp/lab08-function-pubsub \
+  --source=function-pubsub \
   --entry-point=handle_event \
   --trigger-topic=lab08-events \
   --memory=128Mi \
