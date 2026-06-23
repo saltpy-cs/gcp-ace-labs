@@ -400,9 +400,14 @@ HTTP 200 — Total time: 0.089s
 real    0m0.091s
 ```
 
-The warm request is typically 10–15x faster than the cold start. For latency-sensitive
-workloads (payment processing, interactive APIs) this difference is unacceptable. The
-solution is minimum instances, which you will configure in exercise 4.
+The difference between cold and warm response times is entirely determined by what your
+application does at startup — loading configuration, opening database connection pools,
+warming caches, importing large libraries, etc. The demo app uses an artificial
+`time.sleep(5)` to make this visible, but in production the same pattern applies: a Java
+service initialising Spring context, a Python service loading an ML model, or a Node
+service connecting to Redis will all show a measurable cold start penalty. For
+latency-sensitive workloads (payment processing, interactive APIs) this is unacceptable.
+The solution is minimum instances, which you will configure in exercise 4.
 
 You can also observe cold starts in Cloud Logging. Cloud Run logs a `"starting container"`
 message when it initialises a new instance:
