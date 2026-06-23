@@ -480,11 +480,16 @@ This is the safe way to deploy a canary — get the revision ready before exposi
 
 Expected output:
 ```
-Deploying container to Cloud Run service [lab08-hello] in project [YOUR_PROJECT] region [us-central1]
-✓ Deploying... Done.
+Building using Buildpacks and deploying container to Cloud Run service [lab08-hello] in project [YOUR_PROJECT] region [us-central1]
+✓ Building and deploying... Done.
+  ✓ Validating configuration...
+  ✓ Uploading sources...
+  ✓ Building Container...
   ✓ Creating Revision...
+  ✓ Routing traffic...
+  ✓ Setting IAM Policy...
 Done.
-Service [lab08-hello] revision [lab08-hello-00002-abc] has been deployed and is not serving traffic.
+Service [lab08-hello] revision [lab08-hello-00002-abc] has been deployed and is serving 0 percent of traffic.
 ```
 
 Get the name of the new revision:
