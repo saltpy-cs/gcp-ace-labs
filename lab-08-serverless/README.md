@@ -409,22 +409,22 @@ service connecting to Redis will all show a measurable cold start penalty. For
 latency-sensitive workloads (payment processing, interactive APIs) this is unacceptable.
 The solution is minimum instances, which you will configure in exercise 4.
 
-You can also observe cold starts in Cloud Logging. Cloud Run logs a `"starting container"`
-message when it initialises a new instance. These appear as structured logs so query
-against `jsonPayload.message`:
+You can also observe cold starts in Cloud Logging. Cloud Run gen2 logs a
+`"Starting new instance"` message in its system log each time it spins up a
+new container instance:
 
 ```bash
 gcloud logging read \
-  'resource.type="cloud_run_revision" AND jsonPayload.message:"starting container"' \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="lab08-hello" AND textPayload:"Starting new instance"' \
   --project="${PROJECT_ID}" \
   --limit=5 \
-  --format="table(timestamp,resource.labels.revision_name,jsonPayload.message)"
+  --format="table(timestamp,resource.labels.revision_name,textPayload)"
 ```
 
 Expected output:
 ```
-TIMESTAMP                      REVISION_NAME           MESSAGE
-2024-01-15T10:23:41.123456789Z lab08-hello-00001-xyz   starting container
+TIMESTAMP                      REVISION_NAME           TEXT_PAYLOAD
+2024-01-15T10:23:41.123456789Z lab08-hello-00001-xyz   Starting new instance. Reason: SCALE_UP - Instance started due to increased traffic.
 ```
 
 ---
