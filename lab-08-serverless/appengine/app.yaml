@@ -1,0 +1,11 @@
+runtime: python311
+
+env_variables:
+  VERSION: "1.0"
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 5
+  target_cpu_utilization: 0.65
+
+instance_class: F1

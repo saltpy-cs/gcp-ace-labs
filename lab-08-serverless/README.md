@@ -892,65 +892,13 @@ code. The `app.yaml` defines the runtime, scaling behaviour, and environment var
 
 Write a simple Python Flask application:
 
-```bash
-mkdir -p /tmp/lab08-appengine
-cat > /tmp/lab08-appengine/main.py << 'PYEOF'
-from flask import Flask, request
-import os
-import platform
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    return f"""
-<!DOCTYPE html>
-<html>
-<head><title>Lab 08 - App Engine</title></head>
-<body>
-<h1>App Engine Standard — Lab 08</h1>
-<p>Version: {os.environ.get('VERSION', '1.0')}</p>
-<p>Python: {platform.python_version()}</p>
-<p>Instance: {os.environ.get('GAE_INSTANCE', 'local')}</p>
-<p>Service: {os.environ.get('GAE_SERVICE', 'default')}</p>
-</body>
-</html>
-"""
-
-@app.route("/health")
-def health():
-    return {"status": "ok", "version": os.environ.get("VERSION", "1.0")}
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
-PYEOF
-
-cat > /tmp/lab08-appengine/requirements.txt << 'EOF'
-Flask==3.0.0
-EOF
-
-cat > /tmp/lab08-appengine/app.yaml << 'EOF'
-runtime: python311
-
-env_variables:
-  VERSION: "1.0"
-
-automatic_scaling:
-  min_instances: 0
-  max_instances: 5
-  target_cpu_utilization: 0.65
-
-instance_class: F1
-EOF
-```
-
-Deploy the application. The first deployment to a project creates the default App Engine
-service. Subsequent deployments create new versions:
+The application source is in the `appengine/` directory of this repository.
+Deploy it directly from there:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 
-gcloud app deploy /tmp/lab08-appengine/app.yaml \
+gcloud app deploy appengine/app.yaml \
   --project="${PROJECT_ID}" \
   --quiet
 ```
