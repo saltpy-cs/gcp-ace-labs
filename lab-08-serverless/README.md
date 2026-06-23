@@ -281,12 +281,6 @@ observable.
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 
-# Remove the repository that was auto-created by the previous deploy
-gcloud artifacts repositories delete cloud-run-source-deploy \
-  --location="${REGION}" \
-  --project="${PROJECT_ID}" \
-  --quiet
-
 # Create an Artifact Registry repository to store the built container image
 gcloud artifacts repositories create lab08 \
   --repository-format=docker \
