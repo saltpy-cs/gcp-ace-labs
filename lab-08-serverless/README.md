@@ -281,8 +281,16 @@ observable.
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 
+# Create an Artifact Registry repository to store the built container image
+gcloud artifacts repositories create lab08 \
+  --repository-format=docker \
+  --location="${REGION}" \
+  --description="Lab 08 container images" \
+  --project="${PROJECT_ID}"
+
 gcloud run deploy lab08-hello \
   --source=cold-start-demo \
+  --image="${REGION}-docker.pkg.dev/${PROJECT_ID}/lab08/lab08-hello" \
   --platform=managed \
   --region="${REGION}" \
   --allow-unauthenticated \
@@ -338,7 +346,7 @@ gcloud run revisions list \
 Expected output:
 ```
 NAME                   CONDITION  CONTAINER_CONCURRENCY  IMAGE
-lab08-hello-00001-xyz  Ready      80                     gcr.io/YOUR_PROJECT/lab08-hello
+lab08-hello-00001-xyz  Ready      80                     us-central1-docker.pkg.dev/YOUR_PROJECT/lab08/lab08-hello
 ```
 
 Notice the `CONTAINER_CONCURRENCY` of 80 — each instance will handle up to 80 concurrent
@@ -443,6 +451,7 @@ echo "Stable revision: ${STABLE_REVISION}"
 # (In a real deployment you would change the --source or --image to a new version)
 gcloud run deploy lab08-hello \
   --source=cold-start-demo \
+  --image="${REGION}-docker.pkg.dev/${PROJECT_ID}/lab08/lab08-hello" \
   --platform=managed \
   --region="${REGION}" \
   --allow-unauthenticated \
