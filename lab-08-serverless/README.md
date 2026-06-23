@@ -660,7 +660,7 @@ gcloud run services describe lab08-hello \
   --format="yaml(spec.template.metadata.annotations)"
 ```
 
-Expected output:
+Expected output (additional gcloud annotations may also appear):
 ```yaml
 spec:
   template:
@@ -668,7 +668,7 @@ spec:
       annotations:
         autoscaling.knative.dev/maxScale: '10'
         autoscaling.knative.dev/minScale: '1'
-        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: 'true'
 ```
 
 > **ACE exam tip:** `--min-instances=1` costs money even at zero traffic because the
