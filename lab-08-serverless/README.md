@@ -326,11 +326,10 @@ echo "Service URL: ${SERVICE_URL}"
 curl -s "${SERVICE_URL}" | head -5
 ```
 
-Expected output (abbreviated HTML):
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head><title>Congratulations | Cloud Run</title>
+Expected output:
+```
+Service URL: https://lab08-hello-xxxxxxxxxx-uc.a.run.app
+<h1>Hello from Cloud Run!</h1>
 ```
 
 Inspect the revision that was created:
