@@ -369,7 +369,6 @@ gcloud run services update lab08-hello \
 Rather than blindly sleeping, use the helper script which polls until the service has actually scaled to zero and then fires the timed request automatically:
 
 ```bash
-chmod +x observe-cold-start.sh
 ./observe-cold-start.sh
 ```
 
