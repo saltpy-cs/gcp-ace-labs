@@ -689,41 +689,8 @@ This exercise deploys a Python function that converts a temperature from Celsius
 Fahrenheit. It is a deliberately simple example to keep the focus on the deployment
 mechanics rather than the application logic.
 
-First create a working directory and write the function source:
-
-```bash
-mkdir -p /tmp/lab08-function-http
-cat > /tmp/lab08-function-http/main.py << 'PYEOF'
-import functions_framework
-import json
-
-@functions_framework.http
-def convert_temperature(request):
-    """HTTP Cloud Function: converts Celsius to Fahrenheit."""
-    request_json = request.get_json(silent=True)
-    request_args = request.args
-
-    if request_json and "celsius" in request_json:
-        celsius = float(request_json["celsius"])
-    elif request_args and "celsius" in request_args:
-        celsius = float(request_args["celsius"])
-    else:
-        return json.dumps({"error": "Missing 'celsius' parameter"}), 400
-
-    fahrenheit = (celsius * 9 / 5) + 32
-    return json.dumps({
-        "celsius": celsius,
-        "fahrenheit": fahrenheit,
-        "message": f"{celsius}°C is {fahrenheit}°F"
-    })
-PYEOF
-
-cat > /tmp/lab08-function-http/requirements.txt << 'EOF'
-functions-framework==3.*
-EOF
-```
-
-Deploy the function:
+The function source is in the `function-http/` directory of this repository.
+Deploy it directly from there:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
@@ -733,7 +700,7 @@ gcloud functions deploy lab08-temp-convert \
   --gen2 \
   --runtime=python311 \
   --region="${REGION}" \
-  --source=/tmp/lab08-function-http \
+  --source=function-http \
   --entry-point=convert_temperature \
   --trigger-http \
   --allow-unauthenticated \
