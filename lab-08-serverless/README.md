@@ -1105,11 +1105,12 @@ gcloud app services set-traffic default \
   --project="${PROJECT_ID}"
 ```
 
-Stop the old v1 version to avoid incurring instance-hour charges (stopped versions do not
-serve traffic or consume compute):
+Delete the old v1 version to avoid incurring charges. Note that `gcloud app versions stop`
+only works for versions using **manual or basic scaling** — automatic scaling versions
+(like ours) must be deleted instead:
 
 ```bash
-gcloud app versions stop "${V1_VERSION}" \
+gcloud app versions delete "${V1_VERSION}" \
   --service=default \
   --project="${PROJECT_ID}" \
   --quiet
@@ -1117,13 +1118,13 @@ gcloud app versions stop "${V1_VERSION}" \
 
 Expected output:
 ```
-Stopping version [default/20240115t103000]....done.
+Deleting [tf-labs-saltpy/default/20240115t103000]...done.
 ```
 
-> **ACE exam tip:** App Engine versions can be in one of three states: SERVING, STOPPED,
-> or DISABLED. STOPPED versions exist and can be re-started instantly (useful for instant
-> rollback), but consume no compute. DELETED versions are gone permanently. Always
-> STOP rather than DELETE if you might need to roll back.
+> **ACE exam tip:** `gcloud app versions stop` only applies to manual and basic scaling
+> versions. Automatic scaling versions cannot be stopped — they must be deleted. For
+> manual/basic scaling, STOPPED versions retain their configuration for instant rollback
+> but consume no compute. DELETED versions are permanently gone.
 
 ---
 
