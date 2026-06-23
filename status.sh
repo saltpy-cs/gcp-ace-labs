@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 LAB=${1:-""}
 PREFIX=${LAB:+$(printf "lab%02d-" "$LAB")}
@@ -93,9 +93,9 @@ gcloud run services list --platform=managed --region="$REGION" \
   --format="table(metadata.name,status.url,status.conditions[0].lastTransitionTime)" 2>/dev/null
 
 echo "=== Cloud Functions ==="
-gcloud functions list --gen2 --regions="$REGION" \
+gcloud functions list --gen2 \
   --filter="name~'^${PREFIX}'" \
-  --format="table(name,state,url)" 2>/dev/null
+  --format="table(name,state,serviceConfig.uri)" 2>/dev/null || true
 
 # Messaging
 echo "=== Pub/Sub Topics ==="
