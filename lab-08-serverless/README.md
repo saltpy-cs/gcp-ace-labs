@@ -551,8 +551,22 @@ SERVICE_URL=$(gcloud run services describe lab08-hello \
   --project="${PROJECT_ID}")
 
 for i in $(seq 1 10); do
-  curl -s -o /dev/null -w "Revision: %header{x-cloud-trace-context} HTTP %{http_code}\n" "${SERVICE_URL}"
+  curl -s "${SERVICE_URL}"
 done
+```
+
+Expected output (mix of both revisions — exact distribution varies):
+```
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00002-abc)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00002-abc)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
+<h1>Hello from Cloud Run! (revision: lab08-hello-00001-xyz)</h1>
 ```
 
 > **Note on traffic splitting:** The 80/20 split is approximate over many requests — each

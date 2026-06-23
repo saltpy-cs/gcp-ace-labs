@@ -4,6 +4,7 @@ from flask import Flask
 
 app = Flask(__name__)
 _initialised = False
+REVISION = os.environ.get("K_REVISION", "unknown")
 
 
 @app.route("/")
@@ -14,7 +15,7 @@ def hello():
         time.sleep(5)
         _initialised = True
         print("Initialisation complete.", flush=True)
-    return "<h1>Hello from Cloud Run!</h1>\n"
+    return f"<h1>Hello from Cloud Run! (revision: {REVISION})</h1>\n"
 
 
 if __name__ == "__main__":
