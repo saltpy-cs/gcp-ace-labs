@@ -314,6 +314,16 @@ Service [lab08-hello] revision [lab08-hello-00001-xyz] has been deployed and is 
 Service URL: https://lab08-hello-xxxxxxxxxx-uc.a.run.app
 ```
 
+> If the output shows `serving 0 percent of traffic` (which can happen if you have
+> redeployed over a service with a custom traffic split), route traffic to the latest
+> revision:
+> ```bash
+> gcloud run services update-traffic lab08-hello \
+>   --to-latest \
+>   --region="${REGION}" \
+>   --project="${PROJECT_ID}"
+> ```
+
 Capture the service URL and make a test request:
 
 ```bash
