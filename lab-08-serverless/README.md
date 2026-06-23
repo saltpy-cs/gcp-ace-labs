@@ -1207,12 +1207,20 @@ echo "Cloud Run service account: ${SA_EMAIL}"
 
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/cloudsql.client"
+  --role="roles/cloudsql.client" \
+  --format="none"
+
+# Verify the binding was applied
+gcloud projects get-iam-policy "${PROJECT_ID}" \
+  --flatten="bindings[].members" \
+  --filter="bindings.role=roles/cloudsql.client AND bindings.members=serviceAccount:${SA_EMAIL}" \
+  --format="table(bindings.role,bindings.members)"
 ```
 
 Expected output:
 ```
-Updated IAM policy for project [YOUR_PROJECT].
+ROLE                  MEMBERS
+roles/cloudsql.client serviceAccount:785337814949-compute@developer.gserviceaccount.com
 ```
 
 #### Step 9c — Deploy a Cloud Run Service with Cloud SQL Connection
