@@ -922,7 +922,15 @@ Created .gcloudignore file. See `gcloud topic gcloudignore` for details.
 ╠═ Uploading 4 files to Google Cloud Storage                ═╣
 ╚════════════════════════════════════════════════════════════╝
 File upload done.
-Waiting for operation [apps/YOUR_PROJECT/operations/operation-...]
+Waiting for operation [apps/YOUR_PROJECT/operations/operation-...] to complete...done.
+Setting traffic split for service [default]...done.
+Deployed service [default] to [https://YOUR_PROJECT.uc.r.appspot.com]
+
+You can stream logs from the command line by running:
+  $ gcloud app logs tail -s default
+
+To view your application in the web browser run:
+  $ gcloud app browse
 ```
 
 Test the application:
