@@ -1070,9 +1070,9 @@ gcloud app versions list \
 
 Expected output:
 ```
-VERSION            TRAFFIC_SPLIT  SERVING_STATUS
-20240115t103000    0.75           SERVING
-20240115t110000    0.25           SERVING
+ID               TRAFFIC_SPLIT  SERVING_STATUS
+20240115t103000  0.75
+20240115t110000  0.25
 ```
 
 Test the main URL multiple times to see both versions responding:
