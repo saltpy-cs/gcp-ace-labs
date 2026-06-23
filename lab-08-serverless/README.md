@@ -1065,12 +1065,12 @@ Verify the traffic split:
 gcloud app versions list \
   --service=default \
   --project="${PROJECT_ID}" \
-  --format="table(id,traffic_split,serving_status)"
+  --format="table(id,traffic_split)"
 ```
 
 Expected output:
 ```
-ID               TRAFFIC_SPLIT  SERVING_STATUS
+ID               TRAFFIC_SPLIT
 20240115t103000  0.75
 20240115t110000  0.25
 ```
