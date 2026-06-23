@@ -373,7 +373,9 @@ gcloud run services update lab08-hello \
   --min-instances=0 \
   --project="${PROJECT_ID}"
 
-# Wait at least 5 minutes with no traffic so the service scales to zero
+# Wait 5 minutes with no traffic so the service scales to zero
+echo "Waiting 5 minutes for the service to scale to zero..."
+sleep 300
 # Then time a request to observe the cold start
 echo "Sending cold-start request..."
 time curl -s -o /dev/null -w "HTTP %{http_code} — Total time: %{time_total}s\n" "${SERVICE_URL}"
