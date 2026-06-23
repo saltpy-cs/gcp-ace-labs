@@ -367,6 +367,12 @@ SERVICE_URL=$(gcloud run services describe lab08-hello \
   --format="value(status.url)" \
   --project="${PROJECT_ID}")
 
+# Ensure the service can scale to zero (required to observe cold starts)
+gcloud run services update lab08-hello \
+  --region="${REGION}" \
+  --min-instances=0 \
+  --project="${PROJECT_ID}"
+
 # Wait at least 5 minutes with no traffic so the service scales to zero
 # Then time a request to observe the cold start
 echo "Sending cold-start request..."
