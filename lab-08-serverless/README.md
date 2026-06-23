@@ -766,16 +766,16 @@ Notice that even though this is a Cloud Function, it has a Cloud Run URL
 underlying service:
 
 ```bash
-gcloud run services list \
+gcloud run services describe lab08-temp-convert \
   --region="${REGION}" \
   --project="${PROJECT_ID}" \
-  --filter="name:lab08-temp-convert"
+  --format="table(metadata.name,status.url,status.conditions[0].lastTransitionTime)"
 ```
 
 Expected output:
 ```
-SERVICE               REGION       URL                                          LAST DEPLOYED BY  LAST DEPLOYED AT
-lab08-temp-convert    us-central1  https://lab08-temp-convert-xxxx-uc.a.run.app  you@example.com   2024-01-15T10:30:00Z
+NAME                URL                                           LAST_TRANSITION_TIME
+lab08-temp-convert  https://lab08-temp-convert-xxxx-uc.a.run.app  2024-01-15T10:30:00Z
 ```
 
 ---
