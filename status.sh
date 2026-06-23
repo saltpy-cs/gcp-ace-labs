@@ -89,13 +89,11 @@ gcloud container clusters list --filter="name~'^${PREFIX}'" 2>/dev/null
 # Serverless
 echo "=== Cloud Run Services ==="
 gcloud run services list --platform=managed --region="$REGION" \
-  --filter="metadata.name~'^${PREFIX}'" \
-  --format="table(metadata.name,status.url,status.conditions[0].lastTransitionTime)" 2>/dev/null
+  --filter="metadata.name~'^${PREFIX}'" 2>/dev/null || true
 
 echo "=== Cloud Functions ==="
-gcloud functions list --gen2 \
-  --filter="name~'^${PREFIX}'" \
-  --format="table(name,state,serviceConfig.uri)" 2>/dev/null || true
+gcloud functions list --gen2 --region="$REGION" \
+  --filter="name~'^${PREFIX}'" 2>/dev/null || true
 
 # Messaging
 echo "=== Pub/Sub Topics ==="
@@ -121,7 +119,8 @@ gcloud storage buckets list --filter="name~'${PREFIX}'" \
 
 echo "=== Artifact Registry Repositories ==="
 gcloud artifacts repositories list --location="$REGION" \
-  --format="table(name.basename(),format,location)" 2>/dev/null | grep -E "^(${PREFIX}|NAME)" || true
+  --format="table(name.basename(),format,location)" 2>/dev/null | \
+  grep -E "^($(echo "${PREFIX}" | sed 's/-$//')|NAME)" || true
 
 # Operations
 echo "=== BigQuery Datasets ==="
