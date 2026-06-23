@@ -492,7 +492,7 @@ Done.
 Service [lab08-hello] revision [lab08-hello-00002-abc] has been deployed and is serving 0 percent of traffic.
 ```
 
-Get the name of the new revision:
+Get the names of both revisions:
 
 ```bash
 CANARY_REVISION=$(gcloud run revisions list \
@@ -500,7 +500,16 @@ CANARY_REVISION=$(gcloud run revisions list \
   --region="${REGION}" \
   --project="${PROJECT_ID}" \
   --format="value(name)" \
+  --sort-by="~creationTimestamp" \
   --limit=1)
+
+STABLE_REVISION=$(gcloud run revisions list \
+  --service=lab08-hello \
+  --region="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(name)" \
+  --sort-by="~creationTimestamp" \
+  --limit=2 | tail -1)
 
 echo "Canary revision: ${CANARY_REVISION}"
 echo "Stable revision: ${STABLE_REVISION}"
