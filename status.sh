@@ -89,10 +89,6 @@ echo "=== Cloud Run Services ==="
 gcloud run services list --platform=managed --region="$REGION" \
   --filter="metadata.name~'^${PREFIX}'" 2>/dev/null || true
 
-echo "=== Cloud Functions ==="
-gcloud functions list --gen2 --region="$REGION" \
-  --filter="name~'^${PREFIX}'" 2>/dev/null || true
-
 # Messaging
 echo "=== Pub/Sub Topics ==="
 gcloud pubsub topics list --filter="name~'${PREFIX}'" \
@@ -117,8 +113,8 @@ gcloud storage buckets list --filter="name~'${PREFIX}'" \
 
 echo "=== Artifact Registry Repositories ==="
 gcloud artifacts repositories list --location="$REGION" \
-  --format="table(name.basename(),format,location)" 2>/dev/null | \
-  grep -E "^($(echo "${PREFIX}" | sed 's/-$//')|NAME)" || true
+  --filter="name~'${PREFIX%%-}'" \
+  --format="table(name.basename(),format,location)" 2>/dev/null || true
 
 # Operations
 echo "=== BigQuery Datasets ==="
