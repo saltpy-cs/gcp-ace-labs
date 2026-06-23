@@ -272,15 +272,17 @@ That error is fine — proceed.
 ### Exercise 1 — Deploy a Container to Cloud Run
 
 Cloud Run deploys any container that listens on HTTP. For this exercise you will deploy
-`us-docker.pkg.dev/cloudrun/container/hello` — a simple public demo image that GCP
-maintains. It responds to any HTTP request with a friendly hello page.
+a small Python Flask application included in this repository (`cold-start-demo/`). It
+has a deliberate 5-second startup delay to simulate real-world initialisation work
+(database connection pools, model loading, etc.), which makes cold starts clearly
+observable.
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 
 gcloud run deploy lab08-hello \
-  --image=us-docker.pkg.dev/cloudrun/container/hello \
+  --source=cold-start-demo \
   --platform=managed \
   --region="${REGION}" \
   --allow-unauthenticated \
@@ -336,7 +338,7 @@ gcloud run revisions list \
 Expected output:
 ```
 NAME                   CONDITION  CONTAINER_CONCURRENCY  IMAGE
-lab08-hello-00001-xyz  Ready      80                     us-docker.pkg.dev/cloudrun/container/hello
+lab08-hello-00001-xyz  Ready      80                     gcr.io/YOUR_PROJECT/lab08-hello
 ```
 
 Notice the `CONTAINER_CONCURRENCY` of 80 — each instance will handle up to 80 concurrent
@@ -438,9 +440,9 @@ STABLE_REVISION=$(gcloud run revisions list \
 echo "Stable revision: ${STABLE_REVISION}"
 
 # Deploy a new revision by setting an environment variable
-# (In a real deployment you would change the --image flag to a new container image)
+# (In a real deployment you would change the --source or --image to a new version)
 gcloud run deploy lab08-hello \
-  --image=us-docker.pkg.dev/cloudrun/container/hello \
+  --source=cold-start-demo \
   --platform=managed \
   --region="${REGION}" \
   --allow-unauthenticated \
