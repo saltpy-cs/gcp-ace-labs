@@ -457,7 +457,7 @@ View the dashboard in the Cloud Console:
    DASHBOARD_ID=$(gcloud monitoring dashboards list \
      --project="${PROJECT_ID}" \
      --format="value(name)" \
-     --filter="displayName='Lab 10 — GCE Operations Dashboard'" \
+     --filter='displayName="Lab 10 — GCE Operations Dashboard"' \
      | sed 's|.*/||')
    echo "https://console.cloud.google.com/monitoring/dashboards/custom/${DASHBOARD_ID}?project=${PROJECT_ID}"
    ```
@@ -516,7 +516,7 @@ Describe the policy to see its full configuration:
 ```bash
 gcloud alpha monitoring policies list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10'" \
+  --filter='displayName:"Lab 10"' \
   --format="yaml(displayName,conditions,alertStrategy)"
 ```
 
@@ -546,12 +546,12 @@ Create an email notification channel:
 PROJECT_ID=$(gcloud config get-value project)
 
 # Replace with your actual email address
-MY_EMAIL="your-email@example.com"
+export MY_EMAIL="your-email@example.com"
 
-envsubst < lab10-email-channel.json.tmpl > /tmp/lab10-email-channel.json
+envsubst < lab10-email-channel.json.tmpl > lab10-email-channel.json
 
 gcloud alpha monitoring channels create \
-  --channel-content-from-file=/tmp/lab10-email-channel.json \
+  --channel-content-from-file=lab10-email-channel.json \
   --project="${PROJECT_ID}"
 ```
 
@@ -566,7 +566,7 @@ Get the channel ID — you need it to attach the channel to the alerting policy:
 ```bash
 CHANNEL_ID=$(gcloud alpha monitoring channels list \
   --project="${PROJECT_ID}" \
-  --filter="displayName='Lab 10 On-Call Email'" \
+  --filter='displayName="Lab 10 On-Call Email"' \
   --format="value(name)")
 
 echo "Channel ID: ${CHANNEL_ID}"
@@ -584,7 +584,7 @@ name:
 ```bash
 POLICY_NAME=$(gcloud alpha monitoring policies list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10 — High CPU'" \
+  --filter='displayName="Lab 10 — High CPU on lab10-vm"' \
   --format="value(name)")
 
 echo "Policy: ${POLICY_NAME}"
@@ -1318,7 +1318,7 @@ for uptime checks is `monitoring.googleapis.com/uptime_check/check_passed`:
 # Get the uptime check ID
 UPTIME_CHECK_ID=$(gcloud monitoring uptime list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10'" \
+  --filter='displayName:"Lab 10"' \
   --format="value(name)" | awk -F/ '{print $NF}')
 
 echo "Uptime check ID: ${UPTIME_CHECK_ID}"
@@ -1520,7 +1520,7 @@ ZONE="us-central1-a"
 echo "=== Deleting alerting policies ==="
 for POLICY in $(gcloud alpha monitoring policies list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10'" \
+  --filter='displayName:"Lab 10"' \
   --format="value(name)"); do
   gcloud alpha monitoring policies delete "${POLICY}" \
     --quiet \
@@ -1530,7 +1530,7 @@ done
 echo "=== Deleting notification channels ==="
 for CHANNEL in $(gcloud alpha monitoring channels list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10'" \
+  --filter='displayName:"Lab 10"' \
   --format="value(name)"); do
   gcloud alpha monitoring channels delete "${CHANNEL}" \
     --quiet \
@@ -1540,7 +1540,7 @@ done
 echo "=== Deleting uptime checks ==="
 for CHECK in $(gcloud monitoring uptime list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10'" \
+  --filter='displayName:"Lab 10"' \
   --format="value(name)"); do
   gcloud monitoring uptime delete "${CHECK}" \
     --quiet \
@@ -1550,7 +1550,7 @@ done
 echo "=== Deleting dashboards ==="
 for DASHBOARD in $(gcloud monitoring dashboards list \
   --project="${PROJECT_ID}" \
-  --filter="displayName:'Lab 10'" \
+  --filter='displayName:"Lab 10"' \
   --format="value(name)"); do
   gcloud monitoring dashboards delete "${DASHBOARD}" \
     --quiet \
