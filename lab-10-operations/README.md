@@ -548,16 +548,7 @@ PROJECT_ID=$(gcloud config get-value project)
 # Replace with your actual email address
 YOUR_EMAIL="your-email@example.com"
 
-cat > /tmp/lab10-email-channel.json << EOF
-{
-  "displayName": "Lab 10 On-Call Email",
-  "type": "email",
-  "labels": {
-    "email_address": "${YOUR_EMAIL}"
-  },
-  "enabled": true
-}
-EOF
+sed "s/YOUR_EMAIL/${YOUR_EMAIL}/" lab10-email-channel.json.tmpl > /tmp/lab10-email-channel.json
 
 gcloud alpha monitoring channels create \
   --channel-content-from-file=/tmp/lab10-email-channel.json \
