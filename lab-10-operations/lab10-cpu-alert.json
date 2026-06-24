@@ -22,11 +22,6 @@
       }
     }
   ],
-  "alertStrategy": {
-    "notificationRateLimit": {
-      "period": "3600s"
-    }
-  },
   "combiner": "OR",
   "enabled": true,
   "documentation": {
