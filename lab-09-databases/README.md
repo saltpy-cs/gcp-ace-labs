@@ -1,7 +1,7 @@
 # Lab 09 — Managed Databases: SQL, NoSQL, and Caching
 
 > **Cost warning:** This lab creates several managed database resources.
-> - Cloud SQL `db-f1-micro` (PostgreSQL): ~$0.01/hr — cheapest tier, fine for the lab.
+> - Cloud SQL `db-g1-small` (PostgreSQL): ~$0.03/hr — smallest supported tier for PostgreSQL 15, fine for the lab.
 > - Memorystore Redis 1 GB Basic: ~$0.049/hr.
 > - Cloud Spanner 1-node: ~$0.90/hr — **use only briefly then destroy immediately**.
 >
@@ -68,7 +68,7 @@ version upgrades, backup scheduling, and failover — you just create an instanc
 and run queries.
 
 The machine types are named in two families:
-- `db-f1-micro`, `db-g1-small` — shared-core, cheap, development/test only
+- `db-g1-small`, `db-g1-small` — shared-core, cheap, development/test only
 - `db-n1-standard-N`, `db-n1-highmem-N` — dedicated vCPUs for production
 
 Cloud SQL is a regional resource. You pick a primary zone, and if you enable HA, GCP also
@@ -320,37 +320,33 @@ gcloud config set compute/zone "${ZONE}"
 ### Exercise 1 — Create a Cloud SQL PostgreSQL Instance
 
 Cloud SQL instances take 3–5 minutes to provision. The flags below are calibrated for
-minimum cost: `db-f1-micro` is the smallest available tier, shared-core, and sufficient
+minimum cost: `db-g1-small` is the smallest available tier, shared-core, and sufficient
 for this lab.
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
-ZONE="us-central1-a"
 
 gcloud sql instances create lab09-postgres \
   --database-version=POSTGRES_15 \
-  --tier=db-f1-micro \
+  --tier=db-g1-small \
   --region="${REGION}" \
-  --zone="${ZONE}" \
   --storage-type=SSD \
   --storage-size=10GB \
   --no-storage-auto-increase \
   --backup-start-time=02:00 \
-  --enable-bin-log \
   --project="${PROJECT_ID}"
 ```
 
-The `--enable-bin-log` flag enables binary logging for PostgreSQL (write-ahead log
-archiving), which is required for point-in-time recovery. `--backup-start-time=02:00`
-schedules automated daily backups at 2 AM UTC.
+`--backup-start-time=02:00` schedules automated daily backups at 2 AM UTC.
+`--region` places the instance in `us-central1`; GCP selects the zone automatically.
 
 This command will take 3–5 minutes. The expected final output:
 
 ```
 Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/instances/lab09-postgres].
 NAME            DATABASE_VERSION  LOCATION       TIER          PRIMARY_ADDRESS  PRIVATE_ADDRESS  STATUS
-lab09-postgres  POSTGRES_15       us-central1-a  db-f1-micro   34.xxx.xxx.xxx   -                RUNNABLE
+lab09-postgres  POSTGRES_15       us-central1-a  db-g1-small   34.xxx.xxx.xxx   -                RUNNABLE
 ```
 
 Verify the instance state:
@@ -364,7 +360,7 @@ gcloud sql instances describe lab09-postgres \
 Expected output:
 ```
 NAME            DATABASE_VERSION  TIER         STATE     IP_ADDRESS
-lab09-postgres  POSTGRES_15       db-f1-micro  RUNNABLE  34.xxx.xxx.xxx
+lab09-postgres  POSTGRES_15       db-g1-small  RUNNABLE  34.xxx.xxx.xxx
 ```
 
 Set the `postgres` superuser password. You will need this to connect via psql:
@@ -381,10 +377,10 @@ Expected output:
 Updated [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/instances/lab09-postgres/users/postgres].
 ```
 
-> **Why `db-f1-micro`?** The `db-f1-micro` tier uses a shared vCPU and 0.6 GB RAM. It is
-> not suitable for production workloads but is identical in behaviour to larger tiers for
-> learning purposes. The ACE exam does not test tier selection deeply — it tests HA, read
-> replicas, Auth Proxy, and database product choice.
+> **Why `db-g1-small`?** The `db-g1-small` tier uses a shared vCPU and 1.7 GB RAM. It is
+> the smallest tier supported for PostgreSQL 15 and is not suitable for production workloads,
+> but is identical in behaviour to larger tiers for learning purposes. The ACE exam does not
+> test tier selection deeply — it tests HA, read replicas, Auth Proxy, and database product choice.
 
 ---
 
@@ -745,7 +741,7 @@ gcloud sql instances create lab09-postgres-replica \
   --master-instance-name=lab09-postgres \
   --replica-type=READ \
   --region="${REGION}" \
-  --tier=db-f1-micro \
+  --tier=db-g1-small \
   --project="${PROJECT_ID}"
 ```
 
@@ -754,7 +750,7 @@ This takes 2–3 minutes. Expected output:
 ```
 Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/instances/lab09-postgres-replica].
 NAME                     DATABASE_VERSION  LOCATION       TIER          PRIMARY_ADDRESS  STATUS
-lab09-postgres-replica   POSTGRES_15       us-central1-b  db-f1-micro   35.xxx.xxx.xxx   RUNNABLE
+lab09-postgres-replica   POSTGRES_15       us-central1-b  db-g1-small   35.xxx.xxx.xxx   RUNNABLE
 ```
 
 List all instances to see the primary-replica relationship:
@@ -768,8 +764,8 @@ gcloud sql instances list \
 Expected output:
 ```
 NAME                     DATABASE_VERSION  REGION       TIER         STATE     MASTER_INSTANCE_NAME
-lab09-postgres           POSTGRES_15       us-central1  db-f1-micro  RUNNABLE
-lab09-postgres-replica   POSTGRES_15       us-central1  db-f1-micro  RUNNABLE  YOUR_PROJECT:lab09-postgres
+lab09-postgres           POSTGRES_15       us-central1  db-g1-small  RUNNABLE
+lab09-postgres-replica   POSTGRES_15       us-central1  db-g1-small  RUNNABLE  YOUR_PROJECT:lab09-postgres
 ```
 
 Verify the replica has the data you wrote in Exercise 3. Connect via the Auth Proxy
@@ -837,7 +833,7 @@ Exit psql: `\q`, then `exit`.
 
 ### Exercise 6 — Enable High Availability
 
-> **Cost note:** Enabling HA on `db-f1-micro` roughly doubles the hourly cost to ~$0.02/hr.
+> **Cost note:** Enabling HA on `db-g1-small` roughly doubles the hourly cost to ~$0.06/hr.
 > Since this lab uses the cheapest tier the impact is minimal. Run the cleanup at the end
 > to avoid ongoing charges.
 
@@ -894,8 +890,8 @@ gcloud sql instances list \
 Expected output:
 ```
 NAME                     DATABASE_VERSION  REGION       TIER         STATE     GCE_ZONE       SECONDARY_GCE_ZONE
-lab09-postgres           POSTGRES_15       us-central1  db-f1-micro  RUNNABLE  us-central1-a  us-central1-b
-lab09-postgres-replica   POSTGRES_15       us-central1  db-f1-micro  RUNNABLE  us-central1-b
+lab09-postgres           POSTGRES_15       us-central1  db-g1-small  RUNNABLE  us-central1-a  us-central1-b
+lab09-postgres-replica   POSTGRES_15       us-central1  db-g1-small  RUNNABLE  us-central1-b
 ```
 
 The `SECONDARY_GCE_ZONE` column on `lab09-postgres` shows `us-central1-b` — the standby
