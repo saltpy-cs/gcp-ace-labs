@@ -546,7 +546,7 @@ Create an email notification channel:
 PROJECT_ID=$(gcloud config get-value project)
 
 # Replace with your actual email address
-YOUR_EMAIL="your-email@example.com"
+MY_EMAIL="your-email@example.com"
 
 envsubst < lab10-email-channel.json.tmpl > /tmp/lab10-email-channel.json
 
