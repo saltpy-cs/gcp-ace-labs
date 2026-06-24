@@ -1,0 +1,36 @@
+{
+  "displayName": "Lab 10 — High CPU on lab10-vm",
+  "conditions": [
+    {
+      "displayName": "CPU utilization > 80% for 5 minutes",
+      "conditionThreshold": {
+        "filter": "resource.type = \"gce_instance\" AND metric.type = \"compute.googleapis.com/instance/cpu/utilization\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "60s",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "groupByFields": ["resource.label.instance_id"]
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.8,
+        "duration": "300s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "3600s"
+    }
+  },
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "CPU utilization on lab10-vm has exceeded 80% for more than 5 minutes. Investigate running processes with: gcloud compute ssh lab10-vm -- top -bn1 | head -20",
+    "mimeType": "text/markdown"
+  }
+}
