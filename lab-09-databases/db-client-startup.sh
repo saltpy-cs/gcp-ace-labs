@@ -3,11 +3,12 @@
 # Installs postgresql-client (psql) and the Cloud SQL Auth Proxy binary.
 
 set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
 apt-get update -y
 apt-get install -y postgresql-client redis-tools
 
-curl -o /usr/local/bin/cloud-sql-proxy \
+curl -fsSL -o /usr/local/bin/cloud-sql-proxy \
   https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.11.0/cloud-sql-proxy.linux.amd64
 chmod +x /usr/local/bin/cloud-sql-proxy
 

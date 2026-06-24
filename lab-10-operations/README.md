@@ -388,6 +388,12 @@ NAME      ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    
 lab10-vm  us-central1-a  e2-micro                   10.128.0.X   34.xxx.xxx.xx  RUNNING
 ```
 
+The startup script installs nginx and the Ops Agent (~3 minutes). Poll until it completes:
+
+```bash
+until gcloud compute ssh lab10-vm --zone=us-central1-a -- "test -f /tmp/startup-complete" 2>/dev/null; do echo "waiting..."; sleep 10; done && echo "Ready"
+```
+
 Also create a firewall rule to allow HTTP traffic (needed for Exercise 9's uptime check):
 
 ```bash
@@ -630,6 +636,13 @@ notificationChannels:
 
 ### Exercise 4 — Write Advanced Log Queries
 
+> **Wait for the startup script to complete before running these queries** (~3 minutes from VM creation).
+> Poll until ready:
+> ```bash
+> until gcloud compute ssh lab10-vm --zone=us-central1-a -- "test -f /tmp/startup-complete" 2>/dev/null; do echo "waiting..."; sleep 10; done && echo "Ready"
+> ```
+> Then allow a further 30 seconds for the Ops Agent to flush the initial log entries to Cloud Logging.
+
 The Logs Explorer query language is a precision tool. Knowing how to compose queries
 quickly separates operators who find the root cause in 5 minutes from those who scroll
 through raw logs for an hour.
@@ -646,57 +659,41 @@ gcloud logging read \
   'resource.type="gce_instance" AND severity>=WARNING' \
   --project="${PROJECT_ID}" \
   --limit=10 \
-  --format="table(timestamp,severity,resource.labels.instance_id,textPayload)"
+  --format="table(timestamp,severity,resource.labels.instance_id,jsonPayload.MESSAGE)"
 ```
 
 Expected output (contains the WARNING line from the startup script):
 
 ```
-TIMESTAMP                     SEVERITY  INSTANCE_ID    TEXT_PAYLOAD
-2024-01-01T00:00:05.000000Z   WARNING   1234567890123  lab10-app: WARNING: high memory threshold approaching
-2024-01-01T00:00:05.000000Z   ERROR     1234567890123  lab10-app: ERROR: simulated application error for lab exercise
+TIMESTAMP                     SEVERITY  INSTANCE_ID    JSON_PAYLOAD_MESSAGE
+2024-01-01T00:00:05.000000Z   WARNING   1234567890123  WARNING: high memory threshold approaching
+2024-01-01T00:00:05.000000Z   ERROR     1234567890123  ERROR: simulated application error for lab exercise
 ```
 
 #### Query 2: Only ERROR severity from the lab10-app tag
 
 ```bash
 gcloud logging read \
-  'resource.type="gce_instance" AND severity=ERROR AND textPayload:"lab10-app"' \
+  'resource.type="gce_instance" AND severity=ERROR AND jsonPayload.SYSLOG_IDENTIFIER="lab10-app"' \
   --project="${PROJECT_ID}" \
   --limit=10 \
-  --format="table(timestamp,severity,textPayload)"
+  --format="table(timestamp,severity,jsonPayload.MESSAGE)"
 ```
 
 Expected output:
 
 ```
-TIMESTAMP                     SEVERITY  TEXT_PAYLOAD
-2024-01-01T00:00:05.000000Z   ERROR     lab10-app: ERROR: simulated application error for lab exercise
+TIMESTAMP                     SEVERITY  JSON_PAYLOAD_MESSAGE
+2024-01-01T00:00:05.000000Z   ERROR     ERROR: simulated application error for lab exercise
 ```
 
 #### Query 3: Nginx access logs from the VM
 
 ```bash
-gcloud logging read \
-  'resource.type="gce_instance" AND logName:"nginx"' \
-  --project="${PROJECT_ID}" \
-  --limit=5 \
-  --format="table(timestamp,logName,textPayload)"
+./query-nginx-logs.sh
 ```
 
-If nginx has not received requests yet, this returns no results. Generate a request first:
-
-```bash
-VM_IP=$(gcloud compute instances describe lab10-vm \
-  --zone="us-central1-a" \
-  --project="${PROJECT_ID}" \
-  --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
-
-curl -s "http://${VM_IP}" > /dev/null
-echo "Sent request to ${VM_IP}"
-```
-
-Wait 30 seconds for the log to appear, then run the query again.
+The script sends a request to nginx, polls until the log entry appears in Cloud Logging, then displays the results.
 
 #### Query 4: All log entries in a time window (last 10 minutes)
 
@@ -716,11 +713,13 @@ Expected output (a mix of system and application logs from the last 10 minutes):
 
 ```
 TIMESTAMP                     SEVERITY  LOG_NAME
-2024-01-01T00:05:12.000000Z   INFO      ...logs/nginx/access
-2024-01-01T00:00:05.000000Z   ERROR     ...logs/syslog
-2024-01-01T00:00:05.000000Z   WARNING   ...logs/syslog
-2024-01-01T00:00:05.000000Z   INFO      ...logs/syslog
+2024-01-01T00:05:12.000000Z   INFO      projects/YOUR_PROJECT/logs/nginx_access
+2024-01-01T00:00:05.000000Z   ERROR     projects/YOUR_PROJECT/logs/journald
+2024-01-01T00:00:05.000000Z   WARNING   projects/YOUR_PROJECT/logs/journald
+2024-01-01T00:00:05.000000Z   INFO      projects/YOUR_PROJECT/logs/journald
 ```
+
+`journald` entries are system and application logs captured from the VM's systemd journal. `nginx_access` entries appear once nginx receives HTTP requests (run `./query-nginx-logs.sh` to generate one).
 
 > **Performance tip for log queries:** Always include `resource.type` and a time range
 > in your filter. These are indexed fields that narrow the search before Cloud Logging
@@ -1104,7 +1103,7 @@ PROJECT_ID=$(gcloud config get-value project)
 
 gcloud logging metrics create lab10-error-count \
   --description="Count of ERROR log entries from lab10-vm" \
-  --log-filter='resource.type="gce_instance" AND severity=ERROR AND textPayload:"lab10-app"' \
+  --log-filter='resource.type="gce_instance" AND severity=ERROR AND jsonPayload.SYSLOG_IDENTIFIER="lab10-app"' \
   --project="${PROJECT_ID}"
 ```
 
