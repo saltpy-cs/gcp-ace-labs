@@ -141,10 +141,7 @@ exceed these estimates.
 To check current spend on your project at any time:
 
 ```bash
-PROJECT_ID=$(gcloud config get-value project)
-# Open the billing report for this project in your browser
-gcloud billing projects describe "${PROJECT_ID}"
-echo "https://console.cloud.google.com/billing/linkedaccount?project=${PROJECT_ID}"
+./gcp-costs.sh
 ```
 
 ---
@@ -182,10 +179,11 @@ export ZONE="us-central1-a"
 echo "Working in project: ${PROJECT_ID}, region: ${REGION}"
 ```
 
-Two helper scripts live at the repo root:
+Three helper scripts live at the repo root:
 
 - **`./enable-apis.sh`** — enable all GCP APIs used in the course (run once after project setup)
 - **`./status.sh [lab-number]`** — show all live resources, optionally filtered to a lab (e.g. `./status.sh 4`). Run before and after cleanup to confirm nothing remains.
+- **`./gcp-costs.sh`** — show billing account info and a link to the spend report for the current project.
 
 Each lab README follows this structure:
 
