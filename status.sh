@@ -104,7 +104,7 @@ gcloud sql instances list --filter="name~'^${PREFIX}'" 2>/dev/null
 
 echo "=== Memorystore (Redis) Instances ==="
 gcloud redis instances list --region="$REGION" \
-  --filter="name~'^${PREFIX}'" 2>/dev/null
+  --filter="name~'${PREFIX}'" 2>/dev/null
 
 # Storage
 echo "=== GCS Buckets ==="
@@ -128,7 +128,7 @@ gcloud monitoring policies list --filter="displayName~'${PREFIX}'" 2>/dev/null
 
 # Security
 echo "=== Secret Manager Secrets ==="
-gcloud secrets list --filter="name~'^${PREFIX}'" 2>/dev/null
+gcloud secrets list --filter="name~'${PREFIX}'" 2>/dev/null
 
 echo "=== Cloud Armor Security Policies ==="
 gcloud compute security-policies list --filter="name~'^${PREFIX}'" 2>/dev/null
