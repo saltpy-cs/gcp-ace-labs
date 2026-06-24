@@ -1343,9 +1343,6 @@ gcloud iam service-accounts delete \
 Verify no billable resources remain:
 
 ```bash
-# Confirm all instances are deleted
-gcloud compute instances list
-
 ../status.sh 5
 ```
 

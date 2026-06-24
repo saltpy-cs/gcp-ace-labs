@@ -1160,17 +1160,6 @@ echo "=== Cleanup complete ==="
 Verify nothing remains:
 
 ```bash
-echo "--- Cloud SQL instances ---"
-gcloud sql instances list \
-  --filter="name:lab09" \
-  --project="${PROJECT_ID}"
-
-echo "--- Memorystore instances ---"
-gcloud redis instances list \
-  --region="${REGION}" \
-  --filter="name:lab09" \
-  --project="${PROJECT_ID}"
-
 ../status.sh 9
 ```
 

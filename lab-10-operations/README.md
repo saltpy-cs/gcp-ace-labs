@@ -1747,32 +1747,6 @@ echo "=== Cleanup complete ==="
 Verify nothing remains:
 
 ```bash
-echo "--- Compute instances ---"
-gcloud compute instances list \
-  --filter="name:lab10" \
-  --project="${PROJECT_ID}"
-
-echo "--- Log sinks ---"
-gcloud logging sinks list \
-  --filter="name:lab10" \
-  --project="${PROJECT_ID}"
-
-echo "--- Log-based metrics ---"
-gcloud logging metrics list \
-  --filter="name:lab10" \
-  --project="${PROJECT_ID}"
-
-echo "--- Alerting policies ---"
-gcloud alpha monitoring policies list \
-  --filter="displayName:'Lab 10'" \
-  --project="${PROJECT_ID}" \
-  --format="table(displayName)"
-
-echo "--- Uptime checks ---"
-gcloud monitoring uptime list \
-  --filter="displayName:'Lab 10'" \
-  --project="${PROJECT_ID}"
-
 ../status.sh 10
 ```
 

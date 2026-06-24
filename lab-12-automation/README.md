@@ -1952,30 +1952,6 @@ echo "=== Cleanup complete ==="
 Verify everything is gone:
 
 ```bash
-echo "--- Cloud Run services ---"
-gcloud run services list \
-  --region="${REGION}" \
-  --filter="name:lab12" \
-  --project="${PROJECT_ID}"
-
-echo "--- Cloud Scheduler jobs ---"
-gcloud scheduler jobs list \
-  --location="${REGION}" \
-  --filter="name:lab12" \
-  --project="${PROJECT_ID}"
-
-echo "--- Cloud Build triggers ---"
-gcloud builds triggers list \
-  --region="${REGION}" \
-  --filter="name:lab12" \
-  --project="${PROJECT_ID}"
-
-echo "--- Artifact Registry repositories ---"
-gcloud artifacts repositories list \
-  --location="${REGION}" \
-  --filter="name:lab12" \
-  --project="${PROJECT_ID}"
-
 ../status.sh 12
 ```
 

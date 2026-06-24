@@ -1435,31 +1435,6 @@ echo "=== Cleanup complete ==="
 Verify all significant resources are gone:
 
 ```bash
-echo "--- Cloud Armor policies ---"
-gcloud compute security-policies list \
-  --filter="name:lab11" \
-  --project="${PROJECT_ID}"
-
-echo "--- Cloud SQL instances ---"
-gcloud sql instances list \
-  --filter="name:lab11" \
-  --project="${PROJECT_ID}"
-
-echo "--- Secret Manager secrets ---"
-gcloud secrets list \
-  --filter="name:lab11" \
-  --project="${PROJECT_ID}"
-
-echo "--- GCS buckets ---"
-gcloud storage buckets list \
-  --filter="name:lab11" \
-  --project="${PROJECT_ID}"
-
-echo "--- Service accounts ---"
-gcloud iam service-accounts list \
-  --filter="email:lab11" \
-  --project="${PROJECT_ID}"
-
 ../status.sh 11
 ```
 
