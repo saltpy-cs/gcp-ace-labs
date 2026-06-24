@@ -1,0 +1,92 @@
+{
+  "displayName": "Lab 10 — GCE Operations Dashboard",
+  "gridLayout": {
+    "widgets": [
+      {
+        "title": "CPU Utilization — lab10-vm",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\" metadata.user_labels.\"name\"=\"lab10-vm\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "CPU utilization",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Network Bytes In/Out — lab10-vm",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"compute.googleapis.com/instance/network/received_bytes_count\" resource.type=\"gce_instance\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "legendTemplate": "bytes received",
+              "plotType": "LINE"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"compute.googleapis.com/instance/network/sent_bytes_count\" resource.type=\"gce_instance\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "legendTemplate": "bytes sent",
+              "plotType": "LINE"
+            }
+          ],
+          "yAxis": {
+            "label": "bytes/sec",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Disk Read/Write Operations — lab10-vm",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"compute.googleapis.com/instance/disk/read_ops_count\" resource.type=\"gce_instance\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "legendTemplate": "disk reads/sec",
+              "plotType": "LINE"
+            }
+          ],
+          "yAxis": {
+            "label": "ops/sec",
+            "scale": "LINEAR"
+          }
+        }
+      }
+    ]
+  }
+}
