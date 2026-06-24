@@ -131,7 +131,7 @@ exceed these estimates.
 | 06  | Regional MIG, 2–3 VMs, HTTP LB | **~$0.05–0.10/hr** | Destroy promptly; LB forwarding rules bill hourly |
 | 07  | GKE Autopilot cluster, 2 pods | **~$0.10/hr** | Autopilot charges per pod resource request |
 | 08  | Cloud Run service, Cloud Function, App Engine | ~$0.00 | Generous free tier; first 2M requests/month free |
-| 09  | Cloud SQL (db-f1-micro), Memorystore (1 GB) | **~$0.07/hr** | SQL + Redis bill per hour — destroy promptly |
+| 09  | Cloud SQL (db-g1-small), Memorystore (1 GB) | **~$0.08/hr** | SQL + Redis bill per hour — destroy promptly |
 | 10  | Log sinks (GCS), alerting policies | ~$0.00 | GCS sink: free tier storage |
 | 11  | KMS key rings, Secret Manager secrets, Cloud Armor policy | ~$0.01 | KMS: $0.06/key/month; Secret Manager: $0.06/secret/month |
 | 12  | Cloud Build triggers, Artifact Registry repo | ~$0.00 | First 120 build-min/day free; 0.5 GB AR storage free |
