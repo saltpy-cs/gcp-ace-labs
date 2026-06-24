@@ -1,0 +1,30 @@
+{
+  "displayName": "Lab 10 — Application Error Rate Too High",
+  "conditions": [
+    {
+      "displayName": "More than 3 errors in 5 minutes",
+      "conditionThreshold": {
+        "filter": "resource.type = \"gce_instance\" AND metric.type = \"logging.googleapis.com/user/lab10-error-count\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_SUM",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 3,
+        "duration": "0s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "More than 3 application errors were logged in a 5-minute window on lab10-vm. Check application logs with: gcloud logging read 'resource.type=gce_instance AND severity=ERROR' --limit=20",
+    "mimeType": "text/markdown"
+  }
+}

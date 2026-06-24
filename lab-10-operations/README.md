@@ -385,7 +385,7 @@ Expected output:
 ```
 Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/zones/us-central1-a/instances/lab10-vm].
 NAME      ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
-lab10-vm  us-central1-a  e2-micro                   10.128.0.X   34.xxx.xxx.xx  RUNNING
+lab10-vm  us-central1-a  e2-micro                   10.128.0.X   EXTERNAL_IP  RUNNING
 ```
 
 The startup script installs nginx and the Ops Agent (~3 minutes). Poll until it completes:
@@ -634,6 +634,74 @@ notificationChannels:
 
 ---
 
+### Start Long-Running Resources
+
+GCS export takes ~1 hour, BigQuery propagation ~15 minutes, and uptime checks need a few minutes to accumulate data. Run all the creation commands now, then complete Exercises 4 and 5 while they propagate. The validation steps in Exercises 6–9 will be ready by the time you reach them.
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+
+# Exercise 6 — GCS sink
+gcloud storage buckets create "gs://lab10-logs-${PROJECT_ID}" \
+  --location="us-central1" --uniform-bucket-level-access --project="${PROJECT_ID}"
+
+gcloud logging sinks create lab10-gcs-sink \
+  "storage.googleapis.com/lab10-logs-${PROJECT_ID}" \
+  --log-filter='resource.type="gce_instance" AND severity>=WARNING' \
+  --project="${PROJECT_ID}"
+
+SINK_SA=$(gcloud logging sinks describe lab10-gcs-sink \
+  --project="${PROJECT_ID}" --format="value(writerIdentity)")
+gcloud storage buckets add-iam-policy-binding "gs://lab10-logs-${PROJECT_ID}" \
+  --member="${SINK_SA}" --role="roles/storage.objectCreator"
+
+# Exercise 7 — BigQuery sink
+bq version 2>/dev/null || gcloud components install bq
+bq --location="us-central1" mk --dataset --description="Lab 10 log exports" "${PROJECT_ID}:lab10_logs"
+
+gcloud logging sinks create lab10-bq-sink \
+  "bigquery.googleapis.com/projects/${PROJECT_ID}/datasets/lab10_logs" \
+  --log-filter='logName:"cloudaudit.googleapis.com%2Factivity"' \
+  --use-partitioned-tables --project="${PROJECT_ID}"
+
+BQ_SINK_SA=$(gcloud logging sinks describe lab10-bq-sink \
+  --project="${PROJECT_ID}" --format="value(writerIdentity)")
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="${BQ_SINK_SA}" --role="roles/bigquery.dataEditor"
+
+# Generate IAM audit events for Exercise 7c
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:lab10-audit-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"
+gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:lab10-audit-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"
+
+# Exercise 8 — Log-based metric + generate errors
+gcloud logging metrics create lab10-error-count \
+  --description="Count of ERROR log entries from lab10-vm" \
+  --log-filter='resource.type="gce_instance" AND severity=ERROR AND jsonPayload.SYSLOG_IDENTIFIER="lab10-app"' \
+  --project="${PROJECT_ID}"
+
+gcloud compute ssh lab10-vm --zone="us-central1-a" --project="${PROJECT_ID}" \
+  --command='for i in $(seq 1 10); do logger -t lab10-app -p user.err "ERROR: simulated application error number ${i}"; sleep 2; done; echo "Done"'
+
+# Exercise 9 — Uptime check
+VM_IP=$(gcloud compute instances describe lab10-vm \
+  --zone="us-central1-a" --project="${PROJECT_ID}" \
+  --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
+gcloud monitoring uptime create \
+  --display-name="Lab 10 — lab10-vm nginx HTTP" \
+  --http-check-path="/" --http-check-port=80 \
+  --resource-type="uptime_url" \
+  --resource-labels="host=${VM_IP},project_id=${PROJECT_ID}" \
+  --period=60 --timeout=10 --project="${PROJECT_ID}"
+
+echo "All long-running resources started. Continue with Exercises 4 and 5."
+```
+
+---
+
 ### Exercise 4 — Write Advanced Log Queries
 
 > **Wait for the startup script to complete before running these queries** (~3 minutes from VM creation).
@@ -834,6 +902,8 @@ _any_ IAM change without knowing the exact method name.
 
 ### Exercise 6 — Create a Log Sink to Export Logs to GCS
 
+> **If you ran the "Start Long-Running Resources" section**, the bucket and sink are already created — skip Steps 6a and 6b and go straight to **Step 6c**.
+
 A log sink to GCS is the standard pattern for long-term log archival and compliance.
 Logs are written as compressed JSON files, organized by date in GCS.
 
@@ -937,7 +1007,7 @@ Expected output:
 Logged 3 warning entries
 ```
 
-Wait 2–3 minutes for the sink to batch and export the entries, then check GCS:
+GCS sinks export in batches on approximately 1-hour intervals — check periodically rather than waiting inline:
 
 ```bash
 gcloud storage ls "gs://lab10-logs-${PROJECT_ID}/" --recursive
@@ -960,11 +1030,19 @@ gs://lab10-logs-YOUR_PROJECT/cloudlogs/2024/01/01/00/lab10-gcs-sink_gce_instance
 
 ### Exercise 7 — Create a Log Sink to BigQuery for Analysis
 
+> **If you ran the "Start Long-Running Resources" section**, the dataset, sink, and IAM events are already created — skip Steps 7a and 7b and go straight to **Step 7c**.
+
 A BigQuery sink lets you run SQL queries over your logs. This is the right pattern for
 compliance reporting ("show me all IAM changes in the last 90 days"), trend analysis, and
 ad-hoc investigations that would be difficult with the Logs Explorer.
 
 #### Step 7a — Create the BigQuery Dataset
+
+`bq` is bundled with the Google Cloud SDK but installed as a separate component. Ensure it is available:
+
+```bash
+bq version 2>/dev/null || gcloud components install bq
+```
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
@@ -1013,17 +1091,16 @@ BQ_SINK_SA=$(gcloud logging sinks describe lab10-bq-sink \
 echo "BQ sink service account: ${BQ_SINK_SA}"
 
 # Grant bigquery.dataEditor so the sink can create tables and insert rows
-bq add-iam-policy-binding \
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member="${BQ_SINK_SA}" \
-  --role="roles/bigquery.dataEditor" \
-  "${PROJECT_ID}:lab10_logs"
+  --role="roles/bigquery.dataEditor"
 ```
 
 Expected output:
 
 ```
 BQ sink service account: serviceAccount:pXXXXX-YYYYY@gcp-sa-logging.iam.gserviceaccount.com
-Successfully updated IAM policy for dataset lab10_logs.
+Updated IAM policy for project [YOUR_PROJECT].
 ```
 
 #### Step 7c — Query Audit Logs in BigQuery
@@ -1046,21 +1123,8 @@ echo "Generated two IAM audit events — wait 10-15 minutes then run the BigQuer
 After 10–15 minutes, query the exported audit logs in BigQuery:
 
 ```bash
-bq query \
-  --use_legacy_sql=false \
-  --project_id="${PROJECT_ID}" \
-  "
-SELECT
-  timestamp,
-  proto_payload.method_name AS method,
-  proto_payload.authentication_info.principal_email AS who,
-  proto_payload.resource_name AS resource
-FROM \`${PROJECT_ID}.lab10_logs.cloudaudit_googleapis_com_activity_*\`
-WHERE DATE(_PARTITIONTIME) = CURRENT_DATE()
-  AND proto_payload.method_name LIKE '%Iam%'
-ORDER BY timestamp DESC
-LIMIT 20
-"
+export PROJECT_ID=$(gcloud config get-value project)
+envsubst < lab10-iam-audit.sql | bq query --use_legacy_sql=false --project_id="${PROJECT_ID}"
 ```
 
 Expected output (once events propagate — allow up to 15 minutes):
@@ -1084,6 +1148,8 @@ Expected output (once events propagate — allow up to 15 minutes):
 ---
 
 ### Exercise 8 — Create a Log-Based Metric and Alert on It
+
+> **If you ran the "Start Long-Running Resources" section**, the metric and error logs are already created — skip Steps 8a and 8b and go straight to **Step 8c**.
 
 Log-based metrics bridge logging and monitoring. You define a filter, and Cloud Monitoring
 counts the matching log entries as a metric that you can chart and alert on.
@@ -1152,41 +1218,8 @@ Log-based metrics appear in Cloud Monitoring with the prefix
 exceeds 3 in a 5-minute window:
 
 ```bash
-cat > /tmp/lab10-logmetric-alert.json << 'EOF'
-{
-  "displayName": "Lab 10 — Application Error Rate Too High",
-  "conditions": [
-    {
-      "displayName": "More than 3 errors in 5 minutes",
-      "conditionThreshold": {
-        "filter": "resource.type = \"gce_instance\" AND metric.type = \"logging.googleapis.com/user/lab10-error-count\"",
-        "aggregations": [
-          {
-            "alignmentPeriod": "300s",
-            "perSeriesAligner": "ALIGN_SUM",
-            "crossSeriesReducer": "REDUCE_SUM"
-          }
-        ],
-        "comparison": "COMPARISON_GT",
-        "thresholdValue": 3,
-        "duration": "0s",
-        "trigger": {
-          "count": 1
-        }
-      }
-    }
-  ],
-  "combiner": "OR",
-  "enabled": true,
-  "documentation": {
-    "content": "More than 3 application errors were logged in a 5-minute window on lab10-vm. Check application logs with: gcloud logging read 'resource.type=gce_instance AND severity=ERROR' --limit=20",
-    "mimeType": "text/markdown"
-  }
-}
-EOF
-
 gcloud alpha monitoring policies create \
-  --policy-from-file=/tmp/lab10-logmetric-alert.json \
+  --policy-from-file=lab10-logmetric-alert.json \
   --project="${PROJECT_ID}"
 ```
 
@@ -1204,25 +1237,27 @@ Created alert policy [projects/YOUR_PROJECT/alertPolicies/POLICY_ID].
 
 #### Step 8d — Verify the Metric Has Data
 
-Wait 5 minutes after generating the errors, then check the metric:
+Confirm the metric descriptor exists:
 
 ```bash
-gcloud monitoring time-series list \
-  --filter='metric.type="logging.googleapis.com/user/lab10-error-count"' \
+gcloud logging metrics describe lab10-error-count \
   --project="${PROJECT_ID}" \
-  --format="table(metric.type,points[0].value.int64Value,points[0].interval.endTime)"
+  --format="table(name,description,filter)"
 ```
 
-Expected output:
+There is no `gcloud` command to read metric time series data — view the chart in the Cloud Monitoring console:
 
+```bash
+echo "https://console.cloud.google.com/monitoring/metrics-explorer?project=${PROJECT_ID}"
 ```
-METRIC_TYPE                                    INT64_VALUE  END_TIME
-logging.googleapis.com/user/lab10-error-count  10           2024-01-01T00:10:00Z
-```
+
+Open that URL. In the metric picker, select **VM Instance → Logs-based metric → lab10-error-count**. The metric descriptor is created immediately but time series data takes up to 10 minutes to appear after the first matching log entries are ingested. If you don't see data yet, wait a few minutes and refresh.
 
 ---
 
 ### Exercise 9 — Uptime Check with Alert on Failure
+
+> **If you ran the "Start Long-Running Resources" section**, the uptime check is already created — skip Steps 9a and 9b and go straight to **Step 9c**.
 
 An uptime check probes an external endpoint on a schedule from multiple geographic
 locations. If the endpoint fails to respond, Cloud Monitoring fires an alert. This is
@@ -1245,34 +1280,12 @@ echo "VM external IP: ${VM_IP}"
 Expected output:
 
 ```
-VM external IP: 34.xxx.xxx.xx
+VM external IP: EXTERNAL_IP
 ```
 
 #### Step 9b — Create the Uptime Check
 
 ```bash
-cat > /tmp/lab10-uptime-check.json << EOF
-{
-  "displayName": "Lab 10 — lab10-vm nginx HTTP",
-  "httpCheck": {
-    "path": "/",
-    "port": 80,
-    "requestMethod": "GET",
-    "validateSsl": false
-  },
-  "monitoredResource": {
-    "type": "uptime_url",
-    "labels": {
-      "host": "${VM_IP}",
-      "project_id": "${PROJECT_ID}"
-    }
-  },
-  "period": "60s",
-  "timeout": "10s",
-  "checkerType": "STATIC_IP_CHECKERS"
-}
-EOF
-
 gcloud monitoring uptime create \
   --display-name="Lab 10 — lab10-vm nginx HTTP" \
   --synthetic-target='' \
@@ -1303,7 +1316,7 @@ Expected output:
 
 ```
 DISPLAY_NAME                    PATH  HOST            PERIOD
-Lab 10 — lab10-vm nginx HTTP    /     34.xxx.xxx.xx   60s
+Lab 10 — lab10-vm nginx HTTP    /     EXTERNAL_IP   60s
 ```
 
 #### Step 9c — Create an Alert for Uptime Check Failure
