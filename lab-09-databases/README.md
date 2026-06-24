@@ -368,7 +368,7 @@ Set the `postgres` superuser password. You will need this to connect via psql:
 ```bash
 gcloud sql users set-password postgres \
   --instance=lab09-postgres \
-  --password="Lab09SecurePass!" \
+  --password='Lab09SecurePass!' \
   --project="${PROJECT_ID}"
 ```
 
@@ -401,6 +401,7 @@ gcloud compute instances create lab09-db-client \
   --image-project=debian-cloud \
   --zone="${ZONE}" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
+  --metadata-from-file=startup-script=db-client-startup.sh \
   --project="${PROJECT_ID}"
 ```
 
@@ -436,9 +437,23 @@ Connection name: YOUR_PROJECT:us-central1:lab09-postgres
 This `PROJECT:REGION:INSTANCE_NAME` string is what the Auth Proxy uses to identify which
 instance to connect to. It encodes the project, region, and instance name in one string.
 
-#### Step 2c — Install the Auth Proxy and psql on the Client VM
+#### Step 2c — Wait for the startup script, then verify
 
-SSH into the VM:
+The startup script (`db-client-startup.sh`) runs automatically on first boot and installs
+`postgresql-client` and the Cloud SQL Auth Proxy. Wait for SSH to become available, then poll inside the VM until the startup script completes:
+
+```bash
+until gcloud compute ssh lab09-db-client \
+  --zone="${ZONE}" \
+  --project="${PROJECT_ID}" \
+  --command="until test -f /tmp/startup-complete; do echo 'Waiting for startup script...'; sleep 5; done; echo 'Startup complete.'" \
+  2>/dev/null; do
+  echo "Waiting for SSH..."
+  sleep 10
+done
+```
+
+Then SSH in and verify:
 
 ```bash
 gcloud compute ssh lab09-db-client \
@@ -446,25 +461,17 @@ gcloud compute ssh lab09-db-client \
   --project="${PROJECT_ID}"
 ```
 
-Once inside the VM, run these commands:
+Inside the VM:
 
 ```bash
-# Install PostgreSQL client (psql only, not the server)
-sudo apt-get update -y
-sudo apt-get install -y postgresql-client
-
-# Download the Cloud SQL Auth Proxy binary
-curl -o cloud-sql-proxy \
-  https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.11.0/cloud-sql-proxy.linux.amd64
-chmod +x cloud-sql-proxy
-
-# Verify the binary works
-./cloud-sql-proxy --version
+cloud-sql-proxy --version
+psql --version
 ```
 
 Expected output:
 ```
-cloud-sql-proxy version 2.11.0
+cloud-sql-proxy version 2.11.0+linux.amd64
+psql (PostgreSQL) 15.x (Debian 15.x-0+deb12u1)
 ```
 
 #### Step 2d — Start the Auth Proxy and Connect
@@ -477,10 +484,10 @@ get-value project` on the VM):
 PROJECT_ID=$(gcloud config get-value project)
 
 # Start the Auth Proxy in the background, listening on localhost:5432
-./cloud-sql-proxy --port 5432 "${PROJECT_ID}:us-central1:lab09-postgres" &
+cloud-sql-proxy --port 5432 "${PROJECT_ID}:us-central1:lab09-postgres" &
 
-# Wait a moment for the proxy to start
-sleep 3
+# Wait until the proxy is listening on port 5432
+until ss -ltn src :5432 | grep -q LISTEN; do sleep 1; done
 ```
 
 Expected output:
@@ -493,14 +500,11 @@ Now connect with psql through the proxy:
 
 ```bash
 # Inside the VM:
-psql "host=127.0.0.1 port=5432 user=postgres dbname=postgres"
+PGPASSWORD='Lab09SecurePass!' psql "host=127.0.0.1 port=5432 user=postgres dbname=postgres"
 ```
-
-When prompted, enter the password you set in Exercise 1: `Lab09SecurePass!`
 
 Expected output:
 ```
-Password for user postgres:
 psql (15.x (Debian 15.x-0+deb12u1), server 15.x)
 SSL connection (protocol: TLSv1.3, cipher: TLS_AES_128_GCM_SHA256, bits: 128, compression: off)
 Type "help" for help.
@@ -523,54 +527,52 @@ Type `\q` to exit psql, then `exit` to return to your local shell.
 
 ### Exercise 3 — Create a Database, Table, and Run Queries
 
-SSH back into the VM and reconnect through the Auth Proxy:
+Exit the psql session if still connected:
+
+```sql
+\q
+```
+
+Copy the setup script to the VM, then SSH in:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 ZONE="us-central1-a"
+
+gcloud compute scp setup.sql lab09-db-client:~ \
+  --zone="${ZONE}" \
+  --project="${PROJECT_ID}"
 
 gcloud compute ssh lab09-db-client \
   --zone="${ZONE}" \
   --project="${PROJECT_ID}"
 ```
 
-Inside the VM, restart the Auth Proxy if it is no longer running (it does not persist
-across SSH sessions):
+Inside the VM, start the Auth Proxy if not already running, then run the setup script:
 
 ```bash
 # Inside the VM:
 PROJECT_ID=$(gcloud config get-value project)
-./cloud-sql-proxy --port 5432 "${PROJECT_ID}:us-central1:lab09-postgres" &
-sleep 3
-psql "host=127.0.0.1 port=5432 user=postgres dbname=postgres"
+ss -ltn src :5432 | grep -q LISTEN || cloud-sql-proxy --port 5432 "${PROJECT_ID}:us-central1:lab09-postgres" &
+until ss -ltn src :5432 | grep -q LISTEN; do sleep 1; done
+PGPASSWORD='Lab09SecurePass!' psql "host=127.0.0.1 port=5432 user=postgres dbname=postgres" -f setup.sql
 ```
 
-Inside the psql session, create a database and a products table:
+Expected output:
+```
+CREATE DATABASE
+You are now connected to database "lab09_store" as user "postgres".
+CREATE TABLE
+INSERT 0 4
+```
+
+Now connect interactively to run queries:
+
+```bash
+PGPASSWORD='Lab09SecurePass!' psql "host=127.0.0.1 port=5432 user=postgres dbname=lab09_store"
+```
 
 ```sql
--- Create a new database
-CREATE DATABASE lab09_store;
-
--- Connect to it
-\c lab09_store
-
--- Create a products table
-CREATE TABLE products (
-  id         SERIAL PRIMARY KEY,
-  name       VARCHAR(100) NOT NULL,
-  price      NUMERIC(10, 2) NOT NULL,
-  stock      INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Insert sample data
-INSERT INTO products (name, price, stock) VALUES
-  ('Cloud SQL Handbook', 29.99, 150),
-  ('GCP ACE Study Guide', 49.99, 200),
-  ('Spanner T-Shirt', 19.99, 50),
-  ('Firestore Mug',   12.99, 0);
-
--- Query the data
 SELECT id, name, price, stock FROM products ORDER BY price DESC;
 ```
 
@@ -758,7 +760,7 @@ List all instances to see the primary-replica relationship:
 ```bash
 gcloud sql instances list \
   --project="${PROJECT_ID}" \
-  --format="table(name,databaseVersion,region,tier,state,masterInstanceName)"
+  --format="table(name,databaseVersion,region,settings.tier,state,masterInstanceName)"
 ```
 
 Expected output:
@@ -784,11 +786,11 @@ Inside the VM:
 PROJECT_ID=$(gcloud config get-value project)
 
 # Start a SECOND proxy instance on a different local port (5433) for the replica
-./cloud-sql-proxy --port 5433 "${PROJECT_ID}:us-central1:lab09-postgres-replica" &
-sleep 3
+cloud-sql-proxy --port 5433 "${PROJECT_ID}:us-central1:lab09-postgres-replica" &
+until ss -ltn src :5433 | grep -q LISTEN; do sleep 1; done
 
 # Connect to the replica
-psql "host=127.0.0.1 port=5433 user=postgres dbname=lab09_store"
+PGPASSWORD='Lab09SecurePass!' psql "host=127.0.0.1 port=5433 user=postgres dbname=lab09_store"
 ```
 
 Run a read query:
@@ -884,7 +886,7 @@ over. Now examine what changed — list all instances again:
 ```bash
 gcloud sql instances list \
   --project="${PROJECT_ID}" \
-  --format="table(name,databaseVersion,region,tier,state,gceZone,secondaryGceZone)"
+  --format="table(name,databaseVersion,region,settings.tier,state,gceZone,secondaryGceZone)"
 ```
 
 Expected output:
@@ -981,22 +983,19 @@ internet. This is intentional: Memorystore has no public endpoint.
 
 #### Step 7b — Connect from the GCE VM and Run Redis Commands
 
-SSH into the client VM:
+Copy the Redis demo script to the VM, then SSH in:
 
 ```bash
+gcloud compute scp redis-demo.txt lab09-db-client:~ \
+  --zone="${ZONE}" \
+  --project="${PROJECT_ID}"
+
 gcloud compute ssh lab09-db-client \
   --zone="${ZONE}" \
   --project="${PROJECT_ID}"
 ```
 
-Inside the VM, install the Redis CLI:
-
-```bash
-# Inside the VM:
-sudo apt-get install -y redis-tools
-```
-
-Connect to Redis (replace with the actual IP from above):
+The startup script already installed `redis-tools`. Inside the VM, connect to Redis (replace with the actual IP from above):
 
 ```bash
 # Inside the VM:
@@ -1017,42 +1016,21 @@ A `PONG` response confirms connectivity. Now set and get some keys:
 
 ```bash
 # Inside the VM:
-redis-cli -h "${REDIS_HOST}" -p 6379 << 'EOF'
--- Set a simple key-value pair
-SET session:user:1001 "{'user_id': 1001, 'name': 'Jane', 'role': 'admin'}"
-GET session:user:1001
-
--- Set a key with an expiry (TTL in seconds — 3600 = 1 hour)
-SET session:user:1002 "{'user_id': 1002, 'name': 'Bob', 'role': 'viewer'}" EX 3600
-TTL session:user:1002
-
--- Increment a counter (atomic — safe for rate limiting)
-SET requests:api:user:1001 0
-INCR requests:api:user:1001
-INCR requests:api:user:1001
-INCR requests:api:user:1001
-GET requests:api:user:1001
-
--- Add items to a sorted set (leaderboard)
-ZADD leaderboard 15000 "player:alice"
-ZADD leaderboard 22500 "player:bob"
-ZADD leaderboard 18000 "player:carol"
-ZREVRANGE leaderboard 0 -1 WITHSCORES
-EOF
+redis-cli -h "${REDIS_HOST}" -p 6379 < ~/redis-demo.txt
 ```
 
 Expected output:
 
 ```
 OK
-{'user_id': 1001, 'name': 'Jane', 'role': 'admin'}
+"{'user_id': 1001, 'name': 'Jane', 'role': 'admin'}"
 OK
-3599
+(integer) 3599
 OK
-1
-2
-3
-3
+(integer) 1
+(integer) 2
+(integer) 3
+"3"
 1) "player:bob"
 2) "22500"
 3) "player:carol"

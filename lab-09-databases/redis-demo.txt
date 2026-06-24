@@ -1,0 +1,16 @@
+SET session:user:1001 "{'user_id': 1001, 'name': 'Jane', 'role': 'admin'}"
+GET session:user:1001
+
+SET session:user:1002 "{'user_id': 1002, 'name': 'Bob', 'role': 'viewer'}" EX 3600
+TTL session:user:1002
+
+SET requests:api:user:1001 0
+INCR requests:api:user:1001
+INCR requests:api:user:1001
+INCR requests:api:user:1001
+GET requests:api:user:1001
+
+ZADD leaderboard 15000 "player:alice"
+ZADD leaderboard 22500 "player:bob"
+ZADD leaderboard 18000 "player:carol"
+ZREVRANGE leaderboard 0 -1 WITHSCORES
