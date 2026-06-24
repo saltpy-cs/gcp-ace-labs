@@ -1471,3 +1471,16 @@ All sections should be empty.
 > **Note on App Engine:** You cannot delete an App Engine application once created — the
 > application itself persists in your project. Deleting all versions (as the cleanup script
 > does) removes all compute cost.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab:
+
+```bash
+./quiz.sh
+```
+
+Five scenario-based questions covering cold starts, product selection, App Engine traffic
+splitting modes, Cloud Functions Gen 2 architecture, and Cloud SQL connectivity patterns.

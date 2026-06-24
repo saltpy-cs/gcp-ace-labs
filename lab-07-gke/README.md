@@ -1272,3 +1272,13 @@ echo "=== Cleanup complete ==="
 ```
 
 > **Note on cluster deletion time:** GKE clusters take 3–5 minutes to delete. The `--quiet` flag skips the confirmation prompt. If you run the deletion commands sequentially (as written above), the script will wait for each deletion to complete before proceeding to the next. Cluster deletion starts billing the moment you submit the command — the meter stops when deletion finishes, not when you run the command.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab with five ACE-style scenario questions:
+
+```bash
+./quiz.sh
+```

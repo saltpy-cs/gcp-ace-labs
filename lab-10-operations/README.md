@@ -1778,3 +1778,16 @@ gcloud monitoring uptime list \
 
 All sections should be empty. If any resources remain, delete them individually
 using the resource type and name shown.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab before moving on:
+
+```bash
+./quiz.sh
+```
+
+Five scenario-based questions covering metric kinds, the Ops Agent, audit logs, log sink
+destinations, and log-based metric aligners — matching ACE exam style.

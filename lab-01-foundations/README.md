@@ -780,6 +780,18 @@ You will use labels extensively on compute and storage resources in later labs, 
 
 ---
 
+## Knowledge Check
+
+Run the quiz to test your understanding of the concepts covered in this lab:
+
+```bash
+./quiz.sh
+```
+
+Five scenario-based questions in ACE exam style, covering IAM inheritance, authentication, resource scope, labels vs tags, and API enablement.
+
+---
+
 ## Cleanup
 
 This lab created no billable resources and does not delete the course project (it is shared across all labs). The only thing to clean up is the `prod-environment` named configuration created in Exercise 6.

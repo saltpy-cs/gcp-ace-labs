@@ -877,6 +877,16 @@ After ~60 seconds:
 
 ---
 
+## Quiz
+
+Test your understanding of the concepts covered in this lab with five ACE-style scenario questions:
+
+```bash
+./quiz.sh
+```
+
+---
+
 ## Cleanup
 
 Run these commands to destroy all resources created in this lab. Order matters — instances must be deleted before you can delete disks that were not set to auto-delete.

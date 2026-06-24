@@ -1995,3 +1995,13 @@ All sections should be empty.
 > but Cloud Source Repositories does not delete the underlying Git objects immediately.
 > If you re-create a repository with the same name in the same project, git history is
 > not recovered — the new repository starts empty.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab with five ACE-style questions:
+
+```bash
+./quiz.sh
+```

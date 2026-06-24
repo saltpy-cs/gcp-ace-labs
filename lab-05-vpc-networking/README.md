@@ -1350,3 +1350,15 @@ gcloud compute instances list
 ```
 
 Expected output: all sections empty (only the `default` network may remain if you have not deleted it from a previous lab).
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab:
+
+```bash
+./quiz.sh
+```
+
+Five scenario-based questions covering VPC scope, firewall rule priority, Cloud NAT vs Private Google Access, transitive peering, and service account-based firewall targeting.

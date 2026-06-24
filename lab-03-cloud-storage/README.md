@@ -1004,3 +1004,15 @@ Removing bucket gs://my-project-123-standard-lab/...
 ```
 
 If a bucket has a locked retention policy preventing deletion, you must wait for the retention period to expire — there is no override, by design. For this lab, no retention policies were locked, so all buckets delete immediately.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab:
+
+```bash
+./quiz.sh
+```
+
+Five scenario-based questions in ACE exam style covering storage class selection, access control models, versioning, signed URLs, and location tradeoffs.

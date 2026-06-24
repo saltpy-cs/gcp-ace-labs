@@ -1125,3 +1125,13 @@ using the resource type and name shown.
 > gcloud compute firewall-rules delete default-allow-http --quiet --project="${PROJECT_ID}"
 > ```
 > If this rule existed before lab 06, leave it in place — other labs use it.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab with five ACE-style scenario questions:
+
+```bash
+./quiz.sh
+```

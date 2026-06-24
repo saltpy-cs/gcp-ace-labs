@@ -949,3 +949,14 @@ fi
 ```
 
 **Expected final output:** compute, service account, custom role, and bucket sections all empty.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab before moving on.
+The quiz has five scenario-based questions in ACE exam style.
+
+```bash
+./quiz.sh
+```

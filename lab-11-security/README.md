@@ -1465,3 +1465,15 @@ gcloud iam service-accounts list \
 
 All sections should be empty. KMS key versions enter `DESTROY_SCHEDULED` state and
 disappear after the 24-hour grace period — this is normal.
+
+---
+
+## Quiz
+
+Test your understanding of the concepts covered in this lab:
+
+```bash
+./quiz.sh
+```
+
+Five scenario-based questions covering encryption tiers, KMS key lifecycle, Secret Manager vs Cloud KMS, Cloud Armor rule evaluation, OS Login, and VPC Service Controls — all in ACE exam style.
