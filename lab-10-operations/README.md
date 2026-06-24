@@ -376,15 +376,7 @@ gcloud compute instances create lab10-vm \
   --image-project=debian-cloud \
   --zone="${ZONE}" \
   --tags=http-server \
-  --metadata=startup-script='#!/bin/bash
-apt-get update -y
-apt-get install -y nginx
-systemctl enable nginx
-systemctl start nginx
-# Write a few structured log lines to syslog so we have log data to query
-logger -t lab10-app "INFO: nginx started successfully"
-logger -t lab10-app "WARNING: high memory threshold approaching"
-logger -t lab10-app "ERROR: simulated application error for lab exercise"' \
+  --metadata-from-file=startup-script=vm-startup.sh \
   --project="${PROJECT_ID}"
 ```
 
