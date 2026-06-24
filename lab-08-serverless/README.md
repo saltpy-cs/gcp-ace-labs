@@ -1415,13 +1415,21 @@ gcloud pubsub topics delete lab08-events \
   --project="${PROJECT_ID}"
 
 echo "=== Deleting App Engine versions ==="
-# Automatic scaling versions cannot be stopped — they must be deleted
+# App Engine requires at least one version in the default service — keep the last one.
+# Automatic scaling versions cannot be stopped, so we delete all but the last.
 ALL_VERSIONS=$(gcloud app versions list \
   --service=default \
   --project="${PROJECT_ID}" \
   --format="value(id)")
 
+VERSIONS_ARRAY=(${ALL_VERSIONS})
+KEEP="${VERSIONS_ARRAY[-1]}"
+
 for VERSION in ${ALL_VERSIONS}; do
+  if [[ "${VERSION}" == "${KEEP}" ]]; then
+    echo "Keeping App Engine version: ${VERSION} (App Engine requires at least one version)"
+    continue
+  fi
   echo "Deleting App Engine version: ${VERSION}"
   gcloud app versions delete "${VERSION}" \
     --service=default \
@@ -1452,32 +1460,9 @@ gcloud artifacts repositories delete cloud-run-source-deploy \
 echo "=== Cleanup complete ==="
 ```
 
-Verify Cloud Run services are deleted:
+Verify all lab resources are removed:
 
 ```bash
-echo "--- Cloud Run services ---"
-gcloud run services list \
-  --region="${REGION}" \
-  --filter="name:lab08" \
-  --project="${PROJECT_ID}"
-
-echo "--- Cloud Functions ---"
-gcloud functions list \
-  --gen2 \
-  --region="${REGION}" \
-  --filter="name:lab08" \
-  --project="${PROJECT_ID}"
-
-echo "--- Cloud SQL instances ---"
-gcloud sql instances list \
-  --filter="name:lab08" \
-  --project="${PROJECT_ID}"
-
-echo "--- Pub/Sub topics ---"
-gcloud pubsub topics list \
-  --filter="name:lab08" \
-  --project="${PROJECT_ID}"
-
 ../status.sh 8
 ```
 
