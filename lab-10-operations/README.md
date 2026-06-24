@@ -665,7 +665,7 @@ gcloud logging read \
 Expected output (contains the WARNING line from the startup script):
 
 ```
-TIMESTAMP                     SEVERITY  INSTANCE_ID    JSON_PAYLOAD_MESSAGE
+TIMESTAMP                     SEVERITY  INSTANCE_ID    MESSAGE
 2024-01-01T00:00:05.000000Z   WARNING   1234567890123  WARNING: high memory threshold approaching
 2024-01-01T00:00:05.000000Z   ERROR     1234567890123  ERROR: simulated application error for lab exercise
 ```
@@ -683,7 +683,7 @@ gcloud logging read \
 Expected output:
 
 ```
-TIMESTAMP                     SEVERITY  JSON_PAYLOAD_MESSAGE
+TIMESTAMP                     SEVERITY  MESSAGE
 2024-01-01T00:00:05.000000Z   ERROR     ERROR: simulated application error for lab exercise
 ```
 
@@ -695,31 +695,29 @@ TIMESTAMP                     SEVERITY  JSON_PAYLOAD_MESSAGE
 
 The script sends a request to nginx, polls until the log entry appears in Cloud Logging, then displays the results.
 
-#### Query 4: All log entries in a time window (last 10 minutes)
+#### Query 4: WARNING and above logs in a time window (last 30 minutes)
+
+Combining a time range with a severity filter is the most common real-world query pattern — narrow by time first, then by severity:
 
 ```bash
-# Calculate timestamp 10 minutes ago
-START_TIME=$(date -u -d '10 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
-             date -u -v-10M '+%Y-%m-%dT%H:%M:%SZ')
+# Calculate timestamp 30 minutes ago
+START_TIME=$(date -u -d '30 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+             date -u -v-30M '+%Y-%m-%dT%H:%M:%SZ')
 
 gcloud logging read \
-  "resource.type=\"gce_instance\" AND timestamp>=\"${START_TIME}\"" \
+  "resource.type=\"gce_instance\" AND severity>=WARNING AND timestamp>=\"${START_TIME}\"" \
   --project="${PROJECT_ID}" \
   --limit=20 \
-  --format="table(timestamp,severity,logName)"
+  --format="table(timestamp,severity,logName,jsonPayload.MESSAGE)"
 ```
 
-Expected output (a mix of system and application logs from the last 10 minutes):
+Expected output:
 
 ```
-TIMESTAMP                     SEVERITY  LOG_NAME
-2024-01-01T00:05:12.000000Z   INFO      projects/YOUR_PROJECT/logs/nginx_access
-2024-01-01T00:00:05.000000Z   ERROR     projects/YOUR_PROJECT/logs/journald
-2024-01-01T00:00:05.000000Z   WARNING   projects/YOUR_PROJECT/logs/journald
-2024-01-01T00:00:05.000000Z   INFO      projects/YOUR_PROJECT/logs/journald
+TIMESTAMP                     SEVERITY  LOG_NAME                              MESSAGE
+2024-01-01T00:00:05.000000Z   ERROR     projects/YOUR_PROJECT/logs/journald   ERROR: simulated application error for lab exercise
+2024-01-01T00:00:05.000000Z   WARNING   projects/YOUR_PROJECT/logs/journald   WARNING: high memory threshold approaching
 ```
-
-`journald` entries are system and application logs captured from the VM's systemd journal. `nginx_access` entries appear once nginx receives HTTP requests (run `./query-nginx-logs.sh` to generate one).
 
 > **Performance tip for log queries:** Always include `resource.type` and a time range
 > in your filter. These are indexed fields that narrow the search before Cloud Logging
