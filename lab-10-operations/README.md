@@ -450,8 +450,26 @@ Lab 10 — GCE Operations Dashboard     projects/YOUR_PROJECT/dashboards/XXXXX
 > raw delta that changes with alignment period length. CPU utilization is a GAUGE metric —
 > it already represents a snapshot percentage, so `ALIGN_MEAN` is appropriate.
 
-Navigate to **Monitoring → Dashboards** in the Cloud Console to view the dashboard visually.
-You should see your three chart widgets populated with data from `lab10-vm`.
+View the dashboard in the Cloud Console:
+
+1. Get the dashboard ID from the create output (the last segment of the `name` field):
+   ```bash
+   DASHBOARD_ID=$(gcloud monitoring dashboards list \
+     --project="${PROJECT_ID}" \
+     --format="value(name)" \
+     --filter="displayName='Lab 10 — GCE Operations Dashboard'" \
+     | sed 's|.*/||')
+   echo "https://console.cloud.google.com/monitoring/dashboards/custom/${DASHBOARD_ID}?project=${PROJECT_ID}"
+   ```
+2. Open the printed URL in your browser.
+3. Alternatively: **Cloud Console → Monitoring → Dashboards → Lab 10 — GCE Operations Dashboard**.
+4. You should see three chart widgets — CPU utilization, network bytes in/out, and disk ops.
+   Charts may show a flat line initially; generate some load to see movement:
+   ```bash
+   gcloud compute ssh lab10-vm --zone="${ZONE}" --project="${PROJECT_ID}" \
+     --command="dd if=/dev/urandom of=/dev/null bs=1M count=500"
+   ```
+5. Refresh the dashboard after 1–2 minutes — the CPU and disk charts should show a spike.
 
 ---
 
