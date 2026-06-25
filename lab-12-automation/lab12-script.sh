@@ -99,7 +99,7 @@ echo "--- Step 5: Pulling and verifying message ---"
 PULLED=$(gcloud pubsub subscriptions pull "${SUB_NAME}" \
   --limit=1 \
   --auto-ack \
-  --format="value(message.data)" \
+  --format="table[no-heading](message.data)" \
   --project="${PROJECT_ID}")
 
 if [ -z "${PULLED}" ]; then
@@ -107,6 +107,6 @@ if [ -z "${PULLED}" ]; then
   exit 1
 fi
 
-echo "Message received (base64-decoded): $(echo "${PULLED}" | base64 -d)"
+echo "Message received: ${PULLED}"
 echo ""
 echo "=== All steps succeeded ==="

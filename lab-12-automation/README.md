@@ -1325,7 +1325,7 @@ Bucket created: gs://YOUR_PROJECT-lab12-script
 Published message ID: 1234567890123456
 
 --- Step 5: Pulling and verifying message ---
-Message received (base64-decoded): {"event":"lab12-test","timestamp":"2024-01-15T10:50:00Z"}
+Message received: {"event":"lab12-test","timestamp":"2024-01-15T10:50:00Z"}
 
 === All steps succeeded ===
 
