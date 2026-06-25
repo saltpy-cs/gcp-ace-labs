@@ -931,21 +931,44 @@ To see the substitutions report, open the build in the Cloud Console using the U
 above, or run:
 
 ```bash
+BUILD_ID=$(gcloud builds list \
+  --region="${REGION}" \
+  --limit=1 \
+  --format="value(id)" \
+  --project="${PROJECT_ID}")
+
 gcloud builds log "${BUILD_ID}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
 
-The log will contain the substitutions report step output:
+The output streams the full build log (Python `SyntaxWarning` lines at the top are noise
+from gcloud's internal libraries — ignore them). Look for the substitutions report:
 ```
+----------------------------- REMOTE BUILD OUTPUT ------------------------------
+starting build "xxxxxxxx-..."
+FETCHSOURCE
+...
+BUILD
+Starting Step #0 - "build"
+...
+Step #0 - "build": Successfully tagged us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app:abcdef1
+Finished Step #0 - "build"
+Starting Step #1 - "report-substitutions"
 Step #1 - "report-substitutions": ===== Substitutions report =====
 Step #1 - "report-substitutions": Environment:   staging
 Step #1 - "report-substitutions": Image tag:     v2.0.0
 Step #1 - "report-substitutions": Short SHA:     abcdef1
-Step #1 - "report-substitutions": Commit SHA:    (empty for manual builds)
+Step #1 - "report-substitutions": Commit SHA:
 Step #1 - "report-substitutions": Build ID:      xxxxxxxx-...
 Step #1 - "report-substitutions": Project:       YOUR_PROJECT
-Step #1 - "report-substitutions": Trigger:       (empty for manual builds)
+Step #1 - "report-substitutions": Trigger:
+Step #1 - "report-substitutions": ================================
+Finished Step #1 - "report-substitutions"
+...
+PUSH
+...
+DONE
 ```
 
 Notice that `$COMMIT_SHA` and `$TRIGGER_NAME` are empty for manually submitted builds —
