@@ -838,18 +838,15 @@ Clone it locally and push the lab12 source:
 
 ```bash
 REGION="us-central1"
+REPO_URL="https://source.developers.google.com/p/${PROJECT_ID}/r/lab12-source"
 
-# Clone into a temp directory
-gcloud source repos clone lab12-source /tmp/lab12-source-repo \
-  --project="${PROJECT_ID}"
-
-# Copy the app source and cloudbuild.yaml into the cloned repo
+mkdir -p /tmp/lab12-source-repo
 cp -r lab12-app/. /tmp/lab12-source-repo/
 cp lab12-main.cloudbuild.yaml /tmp/lab12-source-repo/cloudbuild.yaml
 
-# Commit and push
 cd /tmp/lab12-source-repo
 git init
+git remote add origin "${REPO_URL}"
 git config --local user.email "lab12@example.com"
 git config --local user.name "Lab 12"
 git add .
