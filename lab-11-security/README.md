@@ -1026,10 +1026,6 @@ Cloud Armor security policies sit in front of your HTTP(S) load balancer backend
 evaluate every inbound request. This exercise creates a policy that blocks a specific IP
 range and allows all other traffic.
 
-If you completed Lab 06, you already have a backend service (`lab06-backend-service`)
-to attach the policy to. If not, follow the note at the end of this exercise to create
-a minimal backend service for testing.
-
 Create the security policy with a default `allow` action (allow all traffic not matched
 by a specific rule):
 
@@ -1051,15 +1047,15 @@ Verify the default rule (priority 2147483647, allow all — created automaticall
 ```bash
 gcloud compute security-policies describe lab11-security-policy \
   --project="${PROJECT_ID}" \
-  --format="yaml(name,rules)"
+  --format="yaml(rules)"
 ```
 
 Expected output:
 ```yaml
-name: lab11-security-policy
 rules:
 - action: allow
   description: default rule
+  kind: compute#securityPolicyRule
   match:
     config:
       srcIpRanges:
@@ -1077,13 +1073,13 @@ gcloud compute security-policies rules create 1000 \
   --security-policy=lab11-security-policy \
   --description="Block RFC 5737 documentation range" \
   --src-ip-ranges="198.51.100.0/24" \
-  --action="deny(403)" \
+  --action="deny-403" \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
 ```
-Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy/rule?priority=1000].
+Updated [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy].
 ```
 
 Add an allow rule at lower priority number (higher precedence) for a trusted office IP
@@ -1101,23 +1097,50 @@ gcloud compute security-policies rules create 500 \
 
 Expected output:
 ```
-Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy/rule?priority=500].
+Updated [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy].
 ```
 
 Verify all rules are in place:
 
 ```bash
-gcloud compute security-policies rules list lab11-security-policy \
+gcloud compute security-policies describe lab11-security-policy \
   --project="${PROJECT_ID}" \
-  --format="table(priority,description,action,match.config.srcIpRanges)"
+  --format="yaml(rules)"
 ```
 
-Expected output:
-```
-PRIORITY  DESCRIPTION                            ACTION      SRC_IP_RANGES
-500       Allow trusted office network           allow       203.0.113.0/24
-1000      Block RFC 5737 documentation range     deny(403)   198.51.100.0/24
-2147483647 default rule                          allow       *
+Expected output (rules may appear in any order):
+```yaml
+rules:
+- action: deny(403)
+  description: Block RFC 5737 documentation range
+  kind: compute#securityPolicyRule
+  match:
+    config:
+      srcIpRanges:
+      - 198.51.100.0/24
+    versionedExpr: SRC_IPS_V1
+  preview: false
+  priority: 1000
+- action: allow
+  description: default rule
+  kind: compute#securityPolicyRule
+  match:
+    config:
+      srcIpRanges:
+      - '*'
+    versionedExpr: SRC_IPS_V1
+  preview: false
+  priority: 2147483647
+- action: allow
+  description: Allow trusted office network
+  kind: compute#securityPolicyRule
+  match:
+    config:
+      srcIpRanges:
+      - 203.0.113.0/24
+    versionedExpr: SRC_IPS_V1
+  preview: false
+  priority: 500
 ```
 
 Rules are evaluated in ascending priority order: 500 first, then 1000, then the default.
@@ -1125,10 +1148,7 @@ A request from `203.0.113.5` matches rule 500 (allow) and never reaches rule 100
 A request from `198.51.100.50` does not match rule 500, matches rule 1000 (deny 403),
 and gets blocked. All other traffic falls through to the default allow.
 
-> **ACE exam tip:** In Cloud Armor, **lower priority number = evaluated first**. This is
-> the opposite of VPC firewall rules, where lower priority numbers are also evaluated
-> first (consistent), but it can be confused with the word "lower priority" meaning
-> "less important" in everyday English. Memorise: priority 1 wins over priority 1000.
+> **ACE exam tip:** In both Cloud Armor and VPC firewall rules, **lower priority number = evaluated first**. The trap is the word "lower priority" in everyday English meaning "less important" — in GCP it means the opposite. Memorise: priority 1 wins over priority 1000 in both services.
 
 ---
 
@@ -1137,41 +1157,11 @@ and gets blocked. All other traffic falls through to the default allow.
 A Cloud Armor security policy only takes effect when attached to a backend service on a
 global external HTTP(S) load balancer. Creating the policy does nothing by itself.
 
-If you completed Lab 06 and still have the backend service running:
+Create a minimal backend service and attach the policy:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 
-gcloud compute backend-services update lab06-backend-service \
-  --security-policy=lab11-security-policy \
-  --global \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-Updated [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/backendServices/lab06-backend-service].
-```
-
-Verify the policy is attached:
-
-```bash
-gcloud compute backend-services describe lab06-backend-service \
-  --global \
-  --project="${PROJECT_ID}" \
-  --format="yaml(name,securityPolicy)"
-```
-
-Expected output:
-```yaml
-name: lab06-backend-service
-securityPolicy: https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy
-```
-
-If you do not have the Lab 06 backend service, create a minimal one for demonstration:
-
-```bash
-# Create a minimal backend service (no backends — just to demonstrate attachment)
 gcloud compute backend-services create lab11-demo-backend \
   --protocol=HTTP \
   --global \
@@ -1181,8 +1171,21 @@ gcloud compute backend-services update lab11-demo-backend \
   --security-policy=lab11-security-policy \
   --global \
   --project="${PROJECT_ID}"
+```
 
-echo "Policy attached to lab11-demo-backend"
+Verify the policy is attached:
+
+```bash
+gcloud compute backend-services describe lab11-demo-backend \
+  --global \
+  --project="${PROJECT_ID}" \
+  --format="table(name,securityPolicy)"
+```
+
+Expected output:
+```
+NAME                 SECURITY_POLICY
+lab11-demo-backend   https://.../securityPolicies/lab11-security-policy
 ```
 
 > Cloud Armor policies are billed per policy per month ($5), not per backend service
@@ -1215,13 +1218,13 @@ gcloud compute security-policies rules create 2000 \
   --security-policy=lab11-security-policy \
   --description="Geo-restriction: block ZZ" \
   --expression="origin.region_code == 'ZZ'" \
-  --action="deny(403)" \
+  --action="deny-403" \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
 ```
-Created [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy/rule?priority=2000].
+Updated [https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT/global/securityPolicies/lab11-security-policy].
 ```
 
 To restrict access to _only_ traffic from a specific country (an allowlist approach),
@@ -1242,7 +1245,7 @@ gcloud compute security-policies rules create 1500 \
 gcloud compute security-policies rules update 2147483647 \
   --security-policy=lab11-security-policy \
   --description="Default deny — non-US traffic" \
-  --action="deny(403)" \
+  --action="deny-403" \
   --src-ip-ranges="*" \
   --project="${PROJECT_ID}"
 ```
@@ -1255,19 +1258,29 @@ Updated [https://www.googleapis.com/compute/v1/projects/.../securityPolicies/lab
 Verify the complete policy rule set:
 
 ```bash
-gcloud compute security-policies rules list lab11-security-policy \
+gcloud compute security-policies describe lab11-security-policy \
   --project="${PROJECT_ID}" \
-  --format="table(priority,description,action)"
+  --format="yaml(rules)"
 ```
 
-Expected output:
-```
-PRIORITY    DESCRIPTION                            ACTION
-500         Allow trusted office network           allow
-1000        Block RFC 5737 documentation range     deny(403)
-1500        Allow only US traffic                  allow
-2000        Geo-restriction: block ZZ              deny(403)
-2147483647  Default deny — non-US traffic          deny(403)
+Expected output (rules may appear in any order, extra fields omitted for brevity):
+```yaml
+rules:
+- action: allow
+  description: Allow trusted office network
+  priority: 500
+- action: deny(403)
+  description: Block RFC 5737 documentation range
+  priority: 1000
+- action: allow
+  description: Allow only US traffic
+  priority: 1500
+- action: deny(403)
+  description: Geo-restriction: block ZZ
+  priority: 2000
+- action: deny(403)
+  description: Default deny — non-US traffic
+  priority: 2147483647
 ```
 
 Restore the default rule to `allow` before finishing this exercise to avoid accidentally
@@ -1359,14 +1372,6 @@ KEYRING_NAME="lab11-keyring"
 KEY_NAME="lab11-symmetric-key"
 
 echo "=== Detaching Cloud Armor policy from backend services ==="
-# Detach from lab06 backend service if it exists
-gcloud compute backend-services update lab06-backend-service \
-  --no-security-policy \
-  --global \
-  --quiet \
-  --project="${PROJECT_ID}" 2>/dev/null || echo "lab06-backend-service not found — skipping."
-
-# Detach from lab11 demo backend if it exists
 gcloud compute backend-services update lab11-demo-backend \
   --no-security-policy \
   --global \
