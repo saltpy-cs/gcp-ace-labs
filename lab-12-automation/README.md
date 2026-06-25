@@ -680,6 +680,9 @@ Starting Step #1 - "describe-image"
 ...
 PUSH
 DONE
+--------------------------------------------------------------------------------
+ID                                    CREATE_TIME                DURATION  SOURCE  IMAGES  STATUS
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  2026-01-15T10:00:00+00:00  11S       -       -       SUCCESS
 ```
 
 View the build in Cloud Build history:
