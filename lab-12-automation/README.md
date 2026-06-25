@@ -1172,7 +1172,7 @@ echo "Waiting for job attempt to complete..."
 until gcloud scheduler jobs describe lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="value(status.code)" 2>/dev/null | grep -qv "^-1$"; do
+  --format="value(lastAttemptTime)" 2>/dev/null | grep -q .; do
   echo "  still pending — retrying in 5s..."; sleep 5
 done
 
@@ -1185,9 +1185,11 @@ gcloud scheduler jobs describe lab12-health-ping \
 Expected output:
 ```yaml
 lastAttemptTime: '2026-01-15T10:55:00Z'
-status:
-  code: 0   # 0 = success
+status: {}
 ```
+
+`status: {}` means success — Cloud Scheduler omits the error code when the HTTP call
+returned a 2xx response.
 
 Now deliberately break the scheduler by pointing it at a non-existent path to observe a
 failure and retry:
@@ -1208,7 +1210,7 @@ echo "Waiting for job attempt to complete..."
 until gcloud scheduler jobs describe lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="value(status.code)" 2>/dev/null | grep -qv "^-1$"; do
+  --format="value(lastAttemptTime)" 2>/dev/null | grep -q .; do
   echo "  still pending — retrying in 5s..."; sleep 5
 done
 
