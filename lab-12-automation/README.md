@@ -1295,11 +1295,10 @@ exercise writes a gcloud script that:
 4. Verifies the message can be pulled from a subscription
 5. Cleans up the resources it created, even if an earlier step failed
 
-The script is already checked in as `lab12-script.sh`. Make it executable and run it:
+The script is already checked in as `lab12-script.sh`. Run it directly:
 
 ```bash
-chmod +x lab12-script.sh
-bash lab12-script.sh
+./lab12-script.sh
 ```
 
 Expected output:
@@ -1356,7 +1355,7 @@ cp lab12-script.sh /tmp/lab12-test-fail.sh
 sed -i 's/BUCKET_NAME="${PROJECT_ID}-lab12-script"/BUCKET_NAME="INVALID BUCKET NAME WITH SPACES"/' \
   /tmp/lab12-test-fail.sh
 
-bash /tmp/lab12-test-fail.sh
+/tmp/lab12-test-fail.sh
 ```
 
 Expected output (bucket creation fails, cleanup still runs and removes the topic and subscription that were already created):
