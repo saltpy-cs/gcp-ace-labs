@@ -733,27 +733,19 @@ gcloud builds submit lab12-app \
   --project="${PROJECT_ID}"
 ```
 
-Expected output (abbreviated):
+Expected output:
 ```
-Creating temporary tarball archive of 4 file(s) totalling 1.2 KiB before compression.
+Creating temporary archive of 3 file(s) totalling 1.0 KiB before compression.
 Uploading tarball of [lab12-app] to [gs://YOUR_PROJECT_cloudbuild/source/...]
-...
-BUILD
-Starting Step #0 - "build"
-Step #0 - "build": Successfully built abc123def456
-Step #0 - "build": Successfully tagged us-central1-docker.pkg.dev/.../lab12-app:abcdef1
-Finished Step #0 - "build"
-Starting Step #1 - "start-for-test"
-...
-Starting Step #2 - "smoke-test"
-Step #2 - "smoke-test": ok
-Step #2 - "smoke-test": Smoke test passed
-Finished Step #2 - "smoke-test"
-...
-PUSH
-Finished Step #4 - "push-sha"
-...
-DONE
+Created [https://cloudbuild.googleapis.com/v1/projects/YOUR_PROJECT/locations/us-central1/builds/xxxxxxxx-...].
+Logs are available at [ https://console.cloud.google.com/cloud-build/builds;region=us-central1/xxxxxxxx-...?project=YOUR_PROJECT_NUMBER ].
+
+gcloud builds submit only displays logs from Cloud Storage. To view logs from Cloud Logging, run:
+gcloud beta builds submit
+
+Waiting for build to complete. Polling interval: 1 second(s).
+ID                                    CREATE_TIME                DURATION  SOURCE                                        IMAGES                                                              STATUS
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  2026-01-15T10:00:00+00:00  41S       gs://YOUR_PROJECT_cloudbuild/source/...tgz    us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app:abcdef1 (+2 more)  SUCCESS
 ```
 
 **Now intentionally break the smoke test to observe a failure.** `lab12-app-broken`
