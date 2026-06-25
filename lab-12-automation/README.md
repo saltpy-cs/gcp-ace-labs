@@ -849,11 +849,12 @@ cp lab12-main.cloudbuild.yaml /tmp/lab12-source-repo/cloudbuild.yaml
 
 # Commit and push
 cd /tmp/lab12-source-repo
+git init
 git config --local user.email "lab12@example.com"
 git config --local user.name "Lab 12"
 git add .
 git commit -m "Initial commit: lab12 app source"
-git push origin main
+git push -u origin main
 ```
 
 Expected output:
