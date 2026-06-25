@@ -715,7 +715,12 @@ is how you learn to debug Cloud Build.
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
+SHORT_SHA=$(git rev-parse --short HEAD)
 ```
+
+`$SHORT_SHA` is automatically populated by Cloud Build when a trigger fires from a git
+commit. For manual `gcloud builds submit` it is empty, so we pass it explicitly using
+the current repo HEAD.
 
 Submit the build. The source directory is uploaded to Cloud Storage and the build runs
 on Cloud Build workers:
@@ -723,6 +728,7 @@ on Cloud Build workers:
 ```bash
 gcloud builds submit lab12-app \
   --config=lab12-main.cloudbuild.yaml \
+  --substitutions="SHORT_SHA=${SHORT_SHA}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -757,6 +763,7 @@ health check cannot connect:
 ```bash
 gcloud builds submit lab12-app-broken \
   --config=lab12-main.cloudbuild.yaml \
+  --substitutions="SHORT_SHA=${SHORT_SHA}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -777,6 +784,7 @@ non-zero status code. Resubmit using the original checked-in source:
 ```bash
 gcloud builds submit lab12-app \
   --config=lab12-main.cloudbuild.yaml \
+  --substitutions="SHORT_SHA=${SHORT_SHA}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -960,6 +968,7 @@ label is embedded.
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
+SHORT_SHA=$(git rev-parse --short HEAD)
 ```
 
 Submit the build passing custom substitution values:
@@ -967,7 +976,7 @@ Submit the build passing custom substitution values:
 ```bash
 gcloud builds submit lab12-app \
   --config=lab12-subs.cloudbuild.yaml \
-  --substitutions="_ENV=staging,_IMAGE_TAG=v2.0.0" \
+  --substitutions="_ENV=staging,_IMAGE_TAG=v2.0.0,SHORT_SHA=${SHORT_SHA}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -985,14 +994,16 @@ Step #1 - "report-substitutions": Trigger:       (empty for manual builds)
 ```
 
 Notice that `$COMMIT_SHA` and `$TRIGGER_NAME` are empty for manually submitted builds —
-they are only set when a trigger fires from a source commit. This is important for scripts
-that conditionally branch on whether a build was triggered or manual.
+they are only set when a trigger fires from a source commit. `$SHORT_SHA` is also normally
+empty for manual builds, which is why we pass it explicitly via `--substitutions`. This is
+important for scripts that conditionally branch on whether a build was triggered or manual.
 
-Submit again without the substitutions to see the defaults apply:
+Submit again without the user-defined substitutions to see the defaults apply:
 
 ```bash
 gcloud builds submit lab12-app \
   --config=lab12-subs.cloudbuild.yaml \
+  --substitutions="SHORT_SHA=${SHORT_SHA}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
