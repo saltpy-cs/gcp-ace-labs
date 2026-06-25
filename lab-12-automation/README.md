@@ -721,7 +721,7 @@ on Cloud Build workers:
 
 ```bash
 gcloud builds submit /tmp/lab12-cicd \
-  --config=/tmp/lab12-cicd/cloudbuild.yaml \
+  --config=lab12-main.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -770,7 +770,7 @@ CMD ["./server"]
 EOF
 
 gcloud builds submit /tmp/lab12-cicd \
-  --config=/tmp/lab12-cicd/cloudbuild.yaml \
+  --config=lab12-main.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -804,7 +804,7 @@ CMD ["./server"]
 EOF
 
 gcloud builds submit /tmp/lab12-cicd \
-  --config=/tmp/lab12-cicd/cloudbuild.yaml \
+  --config=lab12-main.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -868,7 +868,7 @@ gcloud source repos clone lab12-source /tmp/lab12-source-repo \
 cp /tmp/lab12-cicd/main.go    /tmp/lab12-source-repo/
 cp /tmp/lab12-cicd/go.mod     /tmp/lab12-source-repo/
 cp /tmp/lab12-cicd/Dockerfile /tmp/lab12-source-repo/
-cp /tmp/lab12-cicd/cloudbuild.yaml /tmp/lab12-source-repo/
+cp lab12-main.cloudbuild.yaml /tmp/lab12-source-repo/cloudbuild.yaml
 
 # Commit and push
 cd /tmp/lab12-source-repo
