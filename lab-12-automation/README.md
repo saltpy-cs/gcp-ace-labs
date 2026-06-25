@@ -1228,13 +1228,15 @@ gcloud scheduler jobs describe lab12-health-ping \
   --format="yaml(status,lastAttemptTime)"
 ```
 
-Expected output (the status code 404 counts as a failure):
+Expected output (the non-zero status code indicates failure):
 ```yaml
 lastAttemptTime: '2026-01-15T10:56:00Z'
 status:
-  code: 2  # non-zero = failure
-  message: 'HTTP response code 404'
+  code: 5
 ```
+
+`status.code: 5` is the gRPC NOT_FOUND code, which Cloud Scheduler reports for an HTTP 404
+response. Any non-empty `status.code` means the attempt failed.
 
 Fix the job by restoring the correct URL:
 
