@@ -644,7 +644,7 @@ Registry repository. This exercise demonstrates using your `lab12-app` image as 
 in a build — the canonical pattern for running integration tests against a freshly built
 image.
 
-Write a `cloudbuild.yaml` that:
+`lab12-pulltest.cloudbuild.yaml` does three things:
 1. Pulls the previously pushed image
 2. Runs it briefly to verify it starts up
 3. Reports the version it is serving
@@ -654,7 +654,7 @@ PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 ```
 
-Submit this build to Cloud Build:
+Submit it to Cloud Build:
 
 ```bash
 gcloud builds submit \
@@ -700,11 +700,11 @@ abc12345-...                          SUCCESS  2024-01-15T10:15:00+00:00     15S
 
 ---
 
-### Exercise 4 — Write a cloudbuild.yaml That Builds, Tests, and Pushes
+### Exercise 4 — Build, Test, and Push With a Cloud Build Pipeline
 
-This exercise is the core of the lab. You will write a production-style `cloudbuild.yaml`
-that mirrors what a real CI pipeline does: build the image from source, run a smoke test
-against it, then push it to Artifact Registry if the test passes.
+This exercise is the core of the lab. `lab12-main.cloudbuild.yaml` is a production-style
+pipeline that mirrors what a real CI pipeline does: build the image from source, run a
+smoke test against it, then push it to Artifact Registry if the test passes.
 
 The build will fail intentionally in one variation to demonstrate failure modes — this
 is how you learn to debug Cloud Build.
