@@ -1161,6 +1161,34 @@ userUpdateTime: '2026-01-15T10:50:00Z'
 first scheduled run (shown in `scheduleTime`) has not fired yet. After the first successful
 invocation it will change to `0`.
 
+Trigger the job manually and poll until the attempt completes:
+
+```bash
+gcloud scheduler jobs run lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}"
+
+echo "Waiting for job attempt to complete..."
+until gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(status.code)" 2>/dev/null | grep -qv "^-1$"; do
+  echo "  still pending — retrying in 5s..."; sleep 5
+done
+
+gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="yaml(status,lastAttemptTime)"
+```
+
+Expected output:
+```yaml
+lastAttemptTime: '2026-01-15T10:55:00Z'
+status:
+  code: 0   # 0 = success
+```
+
 Now deliberately break the scheduler by pointing it at a non-existent path to observe a
 failure and retry:
 
@@ -1171,10 +1199,18 @@ gcloud scheduler jobs update http lab12-health-ping \
   --uri="${SERVICE_URL}/this-path-does-not-exist" \
   --project="${PROJECT_ID}"
 
-# Trigger it and check the status
+# Trigger it and poll until the attempt completes
 gcloud scheduler jobs run lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}"
+
+echo "Waiting for job attempt to complete..."
+until gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(status.code)" 2>/dev/null | grep -qv "^-1$"; do
+  echo "  still pending — retrying in 5s..."; sleep 5
+done
 
 gcloud scheduler jobs describe lab12-health-ping \
   --location="${REGION}" \
@@ -1184,7 +1220,7 @@ gcloud scheduler jobs describe lab12-health-ping \
 
 Expected output (the status code 404 counts as a failure):
 ```yaml
-lastAttemptTime: '2024-01-15T10:46:00.000000Z'
+lastAttemptTime: '2026-01-15T10:56:00Z'
 status:
   code: 2  # non-zero = failure
   message: 'HTTP response code 404'
