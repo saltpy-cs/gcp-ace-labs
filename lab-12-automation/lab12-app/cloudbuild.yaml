@@ -1,0 +1,64 @@
+steps:
+  # Step 1: Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:latest'
+      - '.'
+
+  # Step 2: Run a smoke test — start the container and curl /health
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'start-for-test'
+    args:
+      - 'run'
+      - '-d'
+      - '--name=lab12-test'
+      - '--network=cloudbuild'
+      - '-e'
+      - 'APP_VERSION=$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
+    waitFor: ['build']
+
+  - name: 'curlimages/curl:8.5.0'
+    id: 'smoke-test'
+    args:
+      - 'sh'
+      - '-c'
+      - |
+        sleep 2
+        curl -sf http://lab12-test:8080/health && echo "Smoke test passed"
+    waitFor: ['start-for-test']
+
+  # Step 3: Stop and remove the test container
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'stop-test-container'
+    args: ['rm', '-f', 'lab12-test']
+    waitFor: ['smoke-test']
+
+  # Step 4: Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-sha'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
+    waitFor: ['stop-test-container']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-latest'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:latest'
+    waitFor: ['stop-test-container']
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '600s'
