@@ -48,9 +48,8 @@ echo "--- Step 1: Checking preconditions ---"
 # Verify required APIs are enabled
 for api in pubsub.googleapis.com storage.googleapis.com; do
   if ! gcloud services list --enabled \
-       --filter="name=${api}" \
-       --format="value(name)" \
-       --project="${PROJECT_ID}" | grep -q "${api}"; then
+       --format="value(config.name)" \
+       --project="${PROJECT_ID}" | grep -q "^${api}$"; then
     echo "ERROR: API ${api} is not enabled. Run: gcloud services enable ${api}"
     exit 1
   fi
