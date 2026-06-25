@@ -554,7 +554,7 @@ Build the Docker image locally and tag it with the full Artifact Registry path:
 PROJECT_ID=$(gcloud config get-value project)
 IMAGE_BASE="us-central1-docker.pkg.dev/${PROJECT_ID}/lab12-repo/lab12-app"
 
-docker build -t "${IMAGE_BASE}:v1.0.0" lab12-app
+docker build --platform linux/amd64 -t "${IMAGE_BASE}:v1.0.0" lab12-app
 ```
 
 Expected output (multi-stage build, last few lines — build time ~10-15s on first run):
