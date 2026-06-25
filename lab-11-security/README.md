@@ -1407,18 +1407,18 @@ gcloud compute backend-services update lab11-demo-backend \
   --no-security-policy \
   --global \
   --quiet \
-  --project="${PROJECT_ID}" 2>/dev/null || echo "lab11-demo-backend not found — skipping."
+  --project="${PROJECT_ID}"
+
+echo "=== Deleting lab11 demo backend service ==="
+gcloud compute backend-services delete lab11-demo-backend \
+  --global \
+  --quiet \
+  --project="${PROJECT_ID}"
 
 echo "=== Deleting Cloud Armor security policy ==="
 gcloud compute security-policies delete lab11-security-policy \
   --quiet \
   --project="${PROJECT_ID}"
-
-echo "=== Deleting lab11 demo backend service (if created) ==="
-gcloud compute backend-services delete lab11-demo-backend \
-  --global \
-  --quiet \
-  --project="${PROJECT_ID}" 2>/dev/null || echo "lab11-demo-backend not found — skipping."
 
 echo "=== Deleting Cloud SQL instance ==="
 gcloud sql instances delete lab11-sql-cmek \
@@ -1469,8 +1469,11 @@ Verify all significant resources are gone:
 ../../status.sh 11
 ```
 
-All sections should be empty. KMS key versions enter `DESTROY_SCHEDULED` state and
-disappear after the 24-hour grace period — this is normal.
+Expected remaining resources (both are normal and incur no cost):
+- **KMS Key Rings**: `lab11-keyring` will always remain — key rings cannot be deleted in GCP.
+- **KMS Keys**: `lab11-symmetric-key` will show with its version in `DESTROY_SCHEDULED` state for 24 hours before permanent destruction.
+
+All other sections should be empty.
 
 ---
 
