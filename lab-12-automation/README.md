@@ -813,11 +813,19 @@ us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app             1234567
 
 ---
 
-### Exercise 5 — Create a Cloud Build Trigger from Cloud Source Repositories
+### Exercise 5 — Push Source to Cloud Source Repositories
 
 A Cloud Build trigger automatically starts a build when source code changes. This exercise
-creates a Cloud Source Repository (GCP's managed private git service), pushes the lab12
-source code to it, and attaches a trigger that builds on every push to the `main` branch.
+creates a Cloud Source Repository (GCP's managed private git service) and pushes the lab12
+source code to it. In practice you would then attach a trigger that builds on every push
+to the `main` branch — the trigger concepts are covered below.
+
+> **Note:** Cloud Source Repositories was deprecated by Google in 2025. The CSR API still
+> accepts repository creation and pushes, but programmatic trigger creation via `gcloud` or
+> the Cloud Build API returns `INVALID_ARGUMENT`. Triggers can still be created manually
+> via the Cloud Console at **Cloud Build → Triggers → Create trigger**, where you select
+> Cloud Source Repositories as the source. For production workloads, use GitHub, GitLab,
+> or Bitbucket as your source provider.
 
 Create a Cloud Source Repository:
 
@@ -834,7 +842,7 @@ Created [lab12-source].
 WARNING: You may be billed for this repository. See https://cloud.google.com/source-repositories/docs/pricing for details.
 ```
 
-Clone it locally and push the lab12 source:
+Push the lab12 source to it:
 
 ```bash
 REGION="us-central1"
@@ -864,67 +872,20 @@ To https://source.developers.google.com/p/YOUR_PROJECT/r/lab12-source
  * [new branch]      main -> main
 ```
 
-Create a Cloud Build trigger that fires on every push to the `main` branch:
+**Trigger concepts:** When a trigger is connected to this repository, Cloud Build would:
 
-```bash
-gcloud builds triggers create cloud-source-repositories \
-  --name="lab12-push-to-main" \
-  --repo="lab12-source" \
-  --branch-pattern="^main$" \
-  --build-config="cloudbuild.yaml" \
-  --region="${REGION}" \
-  --project="${PROJECT_ID}"
-```
+1. Watch for pushes to branches matching the pattern (e.g. `^main$`)
+2. On each match, clone the repo at that commit and upload it as build source
+3. Run the steps in `cloudbuild.yaml`, with `$SHORT_SHA` and `$COMMIT_SHA` automatically
+   populated from the triggering commit
+4. Report build status back to the source provider
 
-Expected output:
-```
-Created [https://cloudbuild.googleapis.com/v1/projects/YOUR_PROJECT/locations/us-central1/triggers/abc12345-...].
-NAME               CREATE_TIME                   STATUS
-lab12-push-to-main 2024-01-15T10:30:00+00:00
-```
-
-Verify the trigger was created:
-
-```bash
-gcloud builds triggers list \
-  --region="${REGION}" \
-  --project="${PROJECT_ID}" \
-  --format="table(name,createTime,github,triggerTemplate.repoName,triggerTemplate.branchName)"
-```
-
-Expected output:
-```
-NAME               CREATE_TIME                   REPO_NAME      BRANCH_NAME
-lab12-push-to-main 2024-01-15T10:30:00+00:00     lab12-source   ^main$
-```
-
-Test the trigger by pushing another commit:
-
-```bash
-cd /tmp/lab12-source-repo
-
-# Make a trivial change to trigger the build
-echo "# Lab 12 CI/CD" >> README.md
-git add README.md
-git commit -m "Trigger build: add README"
-git push origin main
-```
-
-After a few seconds, list running builds to see the triggered build:
-
-```bash
-gcloud builds list \
-  --region="${REGION}" \
-  --ongoing \
-  --format="table(id,status,createTime,source.repoSource.repoName,source.repoSource.branchName)" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-ID                                    STATUS   CREATE_TIME               REPO_NAME     BRANCH_NAME
-def56789-...                          WORKING  2024-01-15T10:35:00+00:00 lab12-source  main
-```
+> **ACE exam tip:** Cloud Build triggers require the Cloud Build service account to have
+> read access to the source repository. For Cloud Source Repositories this is automatic
+> because the service account already has access within the project. For GitHub, you
+> authorise via the Cloud Build GitHub App. For GitLab, you use a Mirror trigger.
+> The trigger itself does not store credentials — it relies on the service account IAM
+> binding and the source connection.
 
 Wait for the build to complete:
 
