@@ -1238,13 +1238,41 @@ status:
 `status.code: 5` is the gRPC NOT_FOUND code, which Cloud Scheduler reports for an HTTP 404
 response. Any non-empty `status.code` means the attempt failed.
 
-Fix the job by restoring the correct URL:
+Fix the job by restoring the correct URL and confirm it passes again:
 
 ```bash
 gcloud scheduler jobs update http lab12-health-ping \
   --location="${REGION}" \
   --uri="${SERVICE_URL}/health" \
   --project="${PROJECT_ID}"
+
+PREV_ATTEMPT=$(gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(lastAttemptTime)")
+
+gcloud scheduler jobs run lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}"
+
+echo "Waiting for job attempt to complete..."
+until [[ "$(gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(lastAttemptTime)" 2>/dev/null)" != "${PREV_ATTEMPT}" ]]; do
+  echo "  still pending — retrying in 5s..."; sleep 5
+done
+
+gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="yaml(status,lastAttemptTime)"
+```
+
+Expected output:
+```yaml
+lastAttemptTime: '2026-01-15T10:57:00Z'
+status: {}
 ```
 
 > **ACE exam tip:** Cloud Scheduler jobs are regional. The `--location` flag in every
