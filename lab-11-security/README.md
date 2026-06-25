@@ -534,7 +534,16 @@ gcloud kms keys versions disable 1 \
   --location="${REGION}" \
   --project="${PROJECT_ID}"
 
-echo "Key version 1 disabled. Attempting decrypt..."
+echo "Key version 1 disabled. Waiting for state to propagate..."
+until gcloud kms keys versions describe 1 \
+  --key="${KEY_NAME}" --keyring="${KEYRING_NAME}" \
+  --location="${REGION}" --project="${PROJECT_ID}" \
+  --format="value(state)" 2>/dev/null | grep -q "DISABLED"; do
+  echo "  not yet — retrying in 5s..."; sleep 5
+done
+echo "Key version is DISABLED."
+
+echo "State confirmed disabled. Attempting decrypt..."
 gcloud kms decrypt \
   --key="${KEY_NAME}" \
   --keyring="${KEYRING_NAME}" \
@@ -546,7 +555,7 @@ gcloud kms decrypt \
 
 Expected error:
 ```
-ERROR: (gcloud.kms.decrypt) FAILED_PRECONDITION: projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key/cryptoKeyVersions/1 is not enabled.
+ERROR: (gcloud.kms.decrypt) FAILED_PRECONDITION: .../cryptoKeyVersions/1 is not enabled.
 ```
 
 This is exactly what happens when a CMEK key is disabled: GCP services lose the ability
@@ -560,12 +569,13 @@ gcloud kms keys versions enable 1 \
   --location="${REGION}" \
   --project="${PROJECT_ID}"
 
-echo "Key version 1 re-enabled."
-```
-
-Expected output:
-```
-Key version 1 re-enabled.
+until gcloud kms keys versions describe 1 \
+  --key="${KEY_NAME}" --keyring="${KEYRING_NAME}" \
+  --location="${REGION}" --project="${PROJECT_ID}" \
+  --format="value(state)" 2>/dev/null | grep -q "ENABLED"; do
+  echo "  not yet — retrying in 5s..."; sleep 5
+done
+echo "Key version is ENABLED."
 ```
 
 > This is the "break glass" scenario in reverse. A real incident response might involve
@@ -630,7 +640,7 @@ Rotate the secret by adding version 2. In a real rotation workflow this would be
 password that you have already applied to the database:
 
 ```bash
-echo -n "RotatedPassword_v2_SecureR@ndom!" | \
+echo -n 'RotatedPassword_v2_SecureR@ndom!' | \
   gcloud secrets versions add lab11-db-password \
   --data-file=- \
   --project="${PROJECT_ID}"
@@ -651,9 +661,9 @@ gcloud secrets versions list lab11-db-password \
 
 Expected output:
 ```
-NAME                                                                              STATE    CREATE_TIME
-projects/YOUR_PROJECT/secrets/lab11-db-password/versions/2  ENABLED  2026-06-17T10:...Z
-projects/YOUR_PROJECT/secrets/lab11-db-password/versions/1  ENABLED  2026-06-17T10:...Z
+NAME  STATE    CREATED
+2     enabled  2026-06-...
+1     enabled  2026-06-...
 ```
 
 `latest` always refers to the highest-numbered enabled version. Access a specific older
@@ -687,9 +697,9 @@ gcloud secrets versions list lab11-db-password \
 
 Expected output:
 ```
-NAME                                                                              STATE
-projects/YOUR_PROJECT/secrets/lab11-db-password/versions/2  ENABLED
-projects/YOUR_PROJECT/secrets/lab11-db-password/versions/1  DISABLED
+NAME  STATE
+2     enabled
+1     disabled
 ```
 
 > **ACE exam tip:** `latest` always resolves to the latest _enabled_ version. Disabling
@@ -772,17 +782,22 @@ This is useful when you want to lock an application to a particular version duri
 controlled migration:
 
 ```bash
-# Grant access to version 2 specifically (useful during gradual rollouts)
-gcloud secrets versions add-iam-policy-binding 2 \
-  --secret=lab11-db-password \
+# Grant access to the secret (IAM is managed at the secret level, not per-version)
+gcloud secrets add-iam-policy-binding lab11-db-password \
   --member="serviceAccount:lab11-app-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretVersionManager" \
+  --role="roles/secretmanager.secretAccessor" \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
 ```
-Updated IAM policy for secret version [2] of secret [lab11-db-password].
+Updated IAM policy for secret [lab11-db-password].
+bindings:
+- members:
+  - serviceAccount:lab11-app-sa@YOUR_PROJECT.iam.gserviceaccount.com
+  role: roles/secretmanager.secretAccessor
+etag: ...
+version: 1
 ```
 
 ---
@@ -802,6 +817,11 @@ PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 KEYRING_NAME="lab11-keyring"
 KEY_NAME="lab11-symmetric-key"
+
+# Provision the GCS service agent (no-op if it already exists)
+gcloud beta services identity create \
+  --service=storage.googleapis.com \
+  --project="${PROJECT_ID}"
 
 # Get the GCS service agent email address for this project
 GCS_SERVICE_AGENT=$(gcloud storage service-agent \
