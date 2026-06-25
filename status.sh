@@ -138,6 +138,12 @@ echo "=== KMS Key Rings ==="
 gcloud kms keyrings list --location="$REGION" \
   --filter="name~'${PREFIX}'" 2>/dev/null
 
+echo "=== KMS Keys ==="
+gcloud kms keyrings list --location="$REGION" \
+  --filter="name~'${PREFIX}'" --format="value(name)" 2>/dev/null | \
+  xargs -I{} gcloud kms keys list --keyring={} --location="$REGION" \
+    --format="table(name.basename(),purpose,primary.state)" 2>/dev/null
+
 # Automation
 echo "=== Cloud Scheduler Jobs ==="
 gcloud scheduler jobs list --location="$REGION" \

@@ -1393,7 +1393,7 @@ policies are billed at $5/month — destroy the policy first.
 
 ```bash
 # Check what exists before cleanup
-../status.sh 11
+../../status.sh 11
 ```
 
 ```bash
@@ -1466,7 +1466,7 @@ echo "=== Cleanup complete ==="
 Verify all significant resources are gone:
 
 ```bash
-../status.sh 11
+../../status.sh 11
 ```
 
 All sections should be empty. KMS key versions enter `DESTROY_SCHEDULED` state and
