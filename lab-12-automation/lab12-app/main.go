@@ -14,6 +14,10 @@ func main() {
     }
 
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path != "/" {
+            http.NotFound(w, r)
+            return
+        }
         version := os.Getenv("APP_VERSION")
         if version == "" {
             version = "1.0.0"

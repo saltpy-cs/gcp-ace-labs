@@ -1164,15 +1164,20 @@ invocation it will change to `0`.
 Trigger the job manually and poll until the attempt completes:
 
 ```bash
+PREV_ATTEMPT=$(gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(lastAttemptTime)")
+
 gcloud scheduler jobs run lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}"
 
 echo "Waiting for job attempt to complete..."
-until gcloud scheduler jobs describe lab12-health-ping \
+until [[ "$(gcloud scheduler jobs describe lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="value(lastAttemptTime)" 2>/dev/null | grep -q .; do
+  --format="value(lastAttemptTime)" 2>/dev/null)" != "${PREV_ATTEMPT}" ]]; do
   echo "  still pending — retrying in 5s..."; sleep 5
 done
 
@@ -1195,22 +1200,25 @@ Now deliberately break the scheduler by pointing it at a non-existent path to ob
 failure and retry:
 
 ```bash
-# Update the job to point at a path that returns 404
 gcloud scheduler jobs update http lab12-health-ping \
   --location="${REGION}" \
   --uri="${SERVICE_URL}/this-path-does-not-exist" \
   --project="${PROJECT_ID}"
 
-# Trigger it and poll until the attempt completes
+PREV_ATTEMPT=$(gcloud scheduler jobs describe lab12-health-ping \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}" \
+  --format="value(lastAttemptTime)")
+
 gcloud scheduler jobs run lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}"
 
-echo "Waiting for job attempt to complete..."
-until gcloud scheduler jobs describe lab12-health-ping \
+echo "Waiting for new job attempt to complete..."
+until [[ "$(gcloud scheduler jobs describe lab12-health-ping \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="value(lastAttemptTime)" 2>/dev/null | grep -q .; do
+  --format="value(lastAttemptTime)" 2>/dev/null)" != "${PREV_ATTEMPT}" ]]; do
   echo "  still pending — retrying in 5s..."; sleep 5
 done
 
