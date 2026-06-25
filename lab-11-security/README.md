@@ -1263,24 +1263,55 @@ gcloud compute security-policies describe lab11-security-policy \
   --format="yaml(rules)"
 ```
 
-Expected output (rules may appear in any order, extra fields omitted for brevity):
+Expected output (rules may appear in any order):
 ```yaml
 rules:
-- action: allow
-  description: Allow trusted office network
-  priority: 500
 - action: deny(403)
   description: Block RFC 5737 documentation range
+  kind: compute#securityPolicyRule
+  match:
+    config:
+      srcIpRanges:
+      - 198.51.100.0/24
+    versionedExpr: SRC_IPS_V1
+  preview: false
   priority: 1000
 - action: allow
   description: Allow only US traffic
+  kind: compute#securityPolicyRule
+  match:
+    expr:
+      expression: origin.region_code == 'US'
+  preview: false
   priority: 1500
 - action: deny(403)
-  description: Geo-restriction: block ZZ
+  description: 'Geo-restriction: block ZZ'
+  kind: compute#securityPolicyRule
+  match:
+    expr:
+      expression: origin.region_code == 'ZZ'
+  preview: false
   priority: 2000
 - action: deny(403)
   description: Default deny — non-US traffic
+  kind: compute#securityPolicyRule
+  match:
+    config:
+      srcIpRanges:
+      - '*'
+    versionedExpr: SRC_IPS_V1
+  preview: false
   priority: 2147483647
+- action: allow
+  description: Allow trusted office network
+  kind: compute#securityPolicyRule
+  match:
+    config:
+      srcIpRanges:
+      - 203.0.113.0/24
+    versionedExpr: SRC_IPS_V1
+  preview: false
+  priority: 500
 ```
 
 Restore the default rule to `allow` before finishing this exercise to avoid accidentally
