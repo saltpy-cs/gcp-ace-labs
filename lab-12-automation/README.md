@@ -887,32 +887,6 @@ To https://source.developers.google.com/p/YOUR_PROJECT/r/lab12-source
 > The trigger itself does not store credentials — it relies on the service account IAM
 > binding and the source connection.
 
-Wait for the build to complete:
-
-```bash
-# Get the latest build ID
-BUILD_ID=$(gcloud builds list \
-  --region="${REGION}" \
-  --limit=1 \
-  --format="value(id)" \
-  --project="${PROJECT_ID}")
-
-gcloud builds log "${BUILD_ID}" \
-  --region="${REGION}" \
-  --project="${PROJECT_ID}" \
-  --stream
-```
-
-The `--stream` flag tails the log in real time. The build should succeed, and a new image
-with the commit's `$SHORT_SHA` tag will appear in Artifact Registry.
-
-> **ACE exam tip:** Cloud Build triggers require the Cloud Build service account to have
-> read access to the source repository. For Cloud Source Repositories this is automatic
-> because the service account already has access within the project. For GitHub, you
-> authorise via the Cloud Build GitHub App. For GitLab, you use a Mirror trigger.
-> The trigger itself does not store credentials — it relies on the service account IAM
-> binding and the source connection.
-
 ---
 
 ### Exercise 6 — Use Substitutions and Build Environment Variables
