@@ -912,14 +912,38 @@ gcloud builds submit lab12-app \
   --project="${PROJECT_ID}"
 ```
 
-Expected output (look for the report section in the logs):
+Expected output:
+```
+Creating temporary archive of 3 file(s) totalling 1.0 KiB before compression.
+Uploading tarball of [lab12-app] to [gs://YOUR_PROJECT_cloudbuild/source/...]
+Created [https://cloudbuild.googleapis.com/v1/projects/YOUR_PROJECT/locations/us-central1/builds/xxxxxxxx-...].
+Logs are available at [ https://console.cloud.google.com/cloud-build/builds;region=us-central1/xxxxxxxx-...?project=YOUR_PROJECT_NUMBER ].
+
+gcloud builds submit only displays logs from Cloud Storage. To view logs from Cloud Logging, run:
+gcloud beta builds submit
+
+Waiting for build to complete. Polling interval: 1 second(s).
+ID                                    CREATE_TIME                DURATION  SOURCE                                        IMAGES                                                              STATUS
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  2026-01-15T10:00:00+00:00  33S       gs://YOUR_PROJECT_cloudbuild/source/...tgz    us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app:abcdef1  SUCCESS
+```
+
+To see the substitutions report, open the build in the Cloud Console using the URL printed
+above, or run:
+
+```bash
+gcloud builds log "${BUILD_ID}" \
+  --region="${REGION}" \
+  --project="${PROJECT_ID}"
+```
+
+The log will contain the substitutions report step output:
 ```
 Step #1 - "report-substitutions": ===== Substitutions report =====
 Step #1 - "report-substitutions": Environment:   staging
 Step #1 - "report-substitutions": Image tag:     v2.0.0
 Step #1 - "report-substitutions": Short SHA:     abcdef1
 Step #1 - "report-substitutions": Commit SHA:    (empty for manual builds)
-Step #1 - "report-substitutions": Build ID:      def56789-...
+Step #1 - "report-substitutions": Build ID:      xxxxxxxx-...
 Step #1 - "report-substitutions": Project:       YOUR_PROJECT
 Step #1 - "report-substitutions": Trigger:       (empty for manual builds)
 ```
