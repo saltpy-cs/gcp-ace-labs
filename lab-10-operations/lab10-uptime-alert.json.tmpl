@@ -1,0 +1,30 @@
+{
+  "displayName": "Lab 10 — lab10-vm Uptime Failure",
+  "conditions": [
+    {
+      "displayName": "Uptime check failing from any location",
+      "conditionThreshold": {
+        "filter": "resource.type = \"uptime_url\" AND metric.type = \"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.labels.check_id = \"${UPTIME_CHECK_ID}\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_FRACTION_TRUE",
+            "crossSeriesReducer": "REDUCE_MEAN"
+          }
+        ],
+        "comparison": "COMPARISON_LT",
+        "thresholdValue": 1.0,
+        "duration": "0s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "The uptime check for lab10-vm is failing. The nginx service may be down. SSH to the VM and check: gcloud compute ssh lab10-vm -- sudo systemctl status nginx",
+    "mimeType": "text/markdown"
+  }
+}

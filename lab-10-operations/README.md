@@ -690,12 +690,11 @@ gcloud compute ssh lab10-vm --zone="us-central1-a" --project="${PROJECT_ID}" \
 VM_IP=$(gcloud compute instances describe lab10-vm \
   --zone="us-central1-a" --project="${PROJECT_ID}" \
   --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
-gcloud monitoring uptime create \
-  --display-name="Lab 10 — lab10-vm nginx HTTP" \
-  --http-check-path="/" --http-check-port=80 \
-  --resource-type="uptime_url" \
+gcloud monitoring uptime create "Lab 10 — lab10-vm nginx HTTP" \
+  --path="/" --port=80 \
+  --resource-type="uptime-url" \
   --resource-labels="host=${VM_IP},project_id=${PROJECT_ID}" \
-  --period=60 --timeout=10 --project="${PROJECT_ID}"
+  --period=1 --timeout=10 --project="${PROJECT_ID}"
 
 echo "All long-running resources started. Continue with Exercises 4 and 5."
 ```
@@ -1286,14 +1285,12 @@ VM external IP: EXTERNAL_IP
 #### Step 9b — Create the Uptime Check
 
 ```bash
-gcloud monitoring uptime create \
-  --display-name="Lab 10 — lab10-vm nginx HTTP" \
-  --synthetic-target='' \
-  --http-check-path="/" \
-  --http-check-port=80 \
-  --resource-type="uptime_url" \
+gcloud monitoring uptime create "Lab 10 — lab10-vm nginx HTTP" \
+  --path="/" \
+  --port=80 \
+  --resource-type="uptime-url" \
   --resource-labels="host=${VM_IP},project_id=${PROJECT_ID}" \
-  --period=60 \
+  --period=1 \
   --timeout=10 \
   --project="${PROJECT_ID}"
 ```
@@ -1307,7 +1304,7 @@ Created [projects/YOUR_PROJECT/uptimeCheckConfigs/UPTIME_CHECK_ID].
 Verify the uptime check was created:
 
 ```bash
-gcloud monitoring uptime list \
+gcloud monitoring uptime list-configs \
   --project="${PROJECT_ID}" \
   --format="table(displayName,httpCheck.path,monitoredResource.labels.host,period)"
 ```
@@ -1326,48 +1323,18 @@ for uptime checks is `monitoring.googleapis.com/uptime_check/check_passed`:
 
 ```bash
 # Get the uptime check ID
-UPTIME_CHECK_ID=$(gcloud monitoring uptime list \
+UPTIME_CHECK_ID=$(gcloud monitoring uptime list-configs \
   --project="${PROJECT_ID}" \
   --filter='displayName:"Lab 10"' \
   --format="value(name)" | awk -F/ '{print $NF}')
 
 echo "Uptime check ID: ${UPTIME_CHECK_ID}"
 
-cat > /tmp/lab10-uptime-alert.json << EOF
-{
-  "displayName": "Lab 10 — lab10-vm Uptime Failure",
-  "conditions": [
-    {
-      "displayName": "Uptime check failing from any location",
-      "conditionThreshold": {
-        "filter": "resource.type = \"uptime_url\" AND metric.type = \"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.labels.check_id = \"${UPTIME_CHECK_ID}\"",
-        "aggregations": [
-          {
-            "alignmentPeriod": "300s",
-            "perSeriesAligner": "ALIGN_FRACTION_TRUE",
-            "crossSeriesReducer": "REDUCE_MEAN"
-          }
-        ],
-        "comparison": "COMPARISON_LT",
-        "thresholdValue": 1.0,
-        "duration": "0s",
-        "trigger": {
-          "count": 1
-        }
-      }
-    }
-  ],
-  "combiner": "OR",
-  "enabled": true,
-  "documentation": {
-    "content": "The uptime check for lab10-vm is failing. The nginx service may be down. SSH to the VM and check: gcloud compute ssh lab10-vm -- sudo systemctl status nginx",
-    "mimeType": "text/markdown"
-  }
-}
-EOF
+export UPTIME_CHECK_ID
+envsubst < lab10-uptime-alert.json.tmpl > lab10-uptime-alert.json
 
 gcloud alpha monitoring policies create \
-  --policy-from-file=/tmp/lab10-uptime-alert.json \
+  --policy-from-file=lab10-uptime-alert.json \
   --project="${PROJECT_ID}"
 ```
 
@@ -1397,14 +1364,15 @@ nginx stopped
 The uptime check runs every 60 seconds from multiple geographic locations. After 2–3
 minutes, Cloud Monitoring detects the failure. Check the uptime check status:
 
+There is no `gcloud` command for uptime check results — view pass/fail status in the console:
+
 ```bash
-# List recent uptime check results (this may take 2-3 minutes to reflect the outage)
-gcloud monitoring uptime list \
-  --project="${PROJECT_ID}" \
-  --format="table(displayName,name)"
+echo "https://console.cloud.google.com/monitoring/uptime?project=${PROJECT_ID}"
 ```
 
-To verify the failure is being detected, you can manually test the endpoint:
+The uptime check dashboard shows per-region pass/fail and latency. After stopping nginx, failures appear within 2–3 minutes as the check cycles through its probe locations.
+
+To verify the failure locally, test the endpoint directly:
 
 ```bash
 VM_IP=$(gcloud compute instances describe lab10-vm \
@@ -1413,7 +1381,7 @@ VM_IP=$(gcloud compute instances describe lab10-vm \
   --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
 
 # This should fail — nginx is stopped
-curl -s --connect-timeout 5 "http://${VM_IP}" || echo "Connection failed — expected!"
+curl -s --connect-timeout 5 "http://${VM_IP}" || echo 'Connection failed — expected'
 ```
 
 Expected output:
@@ -1440,7 +1408,7 @@ nginx restarted
 Verify nginx is responding again:
 
 ```bash
-curl -s --connect-timeout 5 "http://${VM_IP}" | grep -o '<title>.*</title>' || echo "Nginx responding"
+curl -s -o /dev/null -w "HTTP %{http_code}\n" --connect-timeout 5 "http://${VM_IP}"
 ```
 
 > **Multi-region uptime checks:** GCP probes uptime checks from multiple global locations
@@ -1548,7 +1516,7 @@ for CHANNEL in $(gcloud alpha monitoring channels list \
 done
 
 echo "=== Deleting uptime checks ==="
-for CHECK in $(gcloud monitoring uptime list \
+for CHECK in $(gcloud monitoring uptime list-configs \
   --project="${PROJECT_ID}" \
   --filter='displayName:"Lab 10"' \
   --format="value(name)"); do
@@ -1586,7 +1554,7 @@ gcloud storage rm -r "gs://lab10-logs-${PROJECT_ID}" \
   --quiet
 
 echo "=== Deleting BigQuery dataset ==="
-bq rm -r -f "${PROJECT_ID}:lab10_logs"
+bq rm -r -f "${PROJECT_ID}:lab10_logs" && echo "Deleted lab10_logs"
 
 echo "=== Removing IAM role binding for audit service account ==="
 gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \

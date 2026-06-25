@@ -124,7 +124,8 @@ echo "=== Log Sinks ==="
 gcloud logging sinks list --filter="name~'${PREFIX}'" 2>/dev/null
 
 echo "=== Alerting Policies ==="
-gcloud monitoring policies list --filter="displayName~'${PREFIX}'" 2>/dev/null
+gcloud monitoring policies list --filter="displayName~'${PREFIX}'" \
+  --format="table(displayName,enabled,conditions[0].displayName)" 2>/dev/null
 
 # Security
 echo "=== Secret Manager Secrets ==="

@@ -3,11 +3,11 @@
 > **Cost warning:** This lab creates billable security resources.
 > - Cloud KMS key version: $0.06/month per active key version.
 > - Secret Manager: first 6 secret versions free, then $0.06 per 10K access operations.
-> - Cloud Armor security policy: **$5.00/policy/month** — create only 1 policy and destroy
->   it promptly when you finish Exercise 7.
+> - Cloud Armor security policy: **$5.00/policy/month, prorated to the hour** — if you
+>   create and delete it within the same session (~2 hours) the actual charge is **< $0.02**.
 >
-> Estimated total if completed in 2 hours and cleaned up promptly: **< $0.10**.
-> The Cloud Armor policy is the only meaningful cost — do not leave it running overnight.
+> Estimated total for the full lab completed and cleaned up in one session: **< $0.10**.
+> Do not leave the Cloud Armor policy running overnight — that is where the cost accumulates.
 
 ---
 
@@ -354,11 +354,10 @@ echo "Project: ${PROJECT_ID}, Region: ${REGION}"
 
 ### Working Directory
 
-Create a local working directory for the files you will encrypt and decrypt:
+Change into the lab working directory where you will create files to encrypt and decrypt:
 
 ```bash
-mkdir -p ~/lab11-workdir
-cd ~/lab11-workdir
+cd workdir
 echo "Lab 11 working directory ready."
 ```
 
@@ -385,9 +384,12 @@ gcloud kms keyrings create "${KEYRING_NAME}" \
   --project="${PROJECT_ID}"
 ```
 
-Expected output:
-```
-Created CryptoKey [projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring].
+This command produces no output on success. Verify the key ring was created:
+
+```bash
+gcloud kms keyrings describe "${KEYRING_NAME}" \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}"
 ```
 
 Now create a symmetric encryption key inside the key ring. The `ENCRYPT_DECRYPT` purpose
@@ -403,37 +405,20 @@ gcloud kms keys create "${KEY_NAME}" \
   --project="${PROJECT_ID}"
 ```
 
-Expected output:
-```
-Created CryptoKey [projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key].
-```
-
-Verify the key ring and key were created:
+This command also produces no output on success. Verify the key was created:
 
 ```bash
-echo "=== Key Ring ==="
-gcloud kms keyrings describe "${KEYRING_NAME}" \
-  --location="${REGION}" \
-  --project="${PROJECT_ID}"
-
-echo ""
-echo "=== Symmetric Key ==="
 gcloud kms keys describe "${KEY_NAME}" \
   --keyring="${KEYRING_NAME}" \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="yaml(name,purpose,primary.state,rotationSchedule)"
+  --format="table(name.basename(),purpose,primary.state,nextRotationTime)"
 ```
 
 Expected output:
-```yaml
-name: projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key
-primary:
-  state: ENABLED
-purpose: ENCRYPT_DECRYPT
-rotationSchedule:
-  nextRotationTime: '2026-09-XX...'
-  rotationPeriod: 7776000s
+```
+NAME                  PURPOSE           PRIMARY_STATE  NEXT_ROTATION_TIME
+lab11-symmetric-key   ENCRYPT_DECRYPT   ENABLED        2026-09-...
 ```
 
 > **Why set a rotation period?** Cryptographic best practice is to rotate keys regularly.
@@ -469,15 +454,8 @@ when GCS or Cloud SQL uses CMEK, it performs exactly these operations on your be
 Create a plaintext file to encrypt:
 
 ```bash
-cd ~/lab11-workdir
-
-cat > secret_config.txt << 'EOF'
-DATABASE_PASSWORD=s3cur3P@ssw0rd!
-API_KEY=abc123xyz456def789
-INTERNAL_ENDPOINT=http://internal.corp.example.com/api
-EOF
-
-echo "Plaintext file created:"
+cp ../secret_config.txt .
+echo "Plaintext file:"
 cat secret_config.txt
 ```
 
