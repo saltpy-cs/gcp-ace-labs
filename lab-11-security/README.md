@@ -817,48 +817,25 @@ PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 KEYRING_NAME="lab11-keyring"
 KEY_NAME="lab11-symmetric-key"
+KMS_KEY_RESOURCE="projects/${PROJECT_ID}/locations/${REGION}/keyRings/${KEYRING_NAME}/cryptoKeys/${KEY_NAME}"
 
-# Provision the GCS service agent (no-op if it already exists)
-gcloud beta services identity create \
-  --service=storage.googleapis.com \
-  --project="${PROJECT_ID}"
-
-# Get the GCS service agent email address for this project
-GCS_SERVICE_AGENT=$(gcloud storage service-agent \
-  --project="${PROJECT_ID}")
-
-echo "GCS service agent: ${GCS_SERVICE_AGENT}"
+# Provision the GCS service agent and grant it KMS access in one step.
+# gsutil is used here because gcloud storage has no equivalent to kms authorize —
+# it is part of the Cloud SDK and available alongside gcloud.
+gsutil kms authorize -p "${PROJECT_ID}" -k "${KMS_KEY_RESOURCE}"
 ```
 
 Expected output:
 ```
-GCS service agent: service-123456789@gs-project-accounts.iam.gserviceaccount.com
-```
-
-Grant the service agent the `cloudkms.cryptoKeyEncrypterDecrypter` role on your key:
-
-```bash
-gcloud kms keys add-iam-policy-binding "${KEY_NAME}" \
-  --keyring="${KEYRING_NAME}" \
-  --location="${REGION}" \
-  --member="serviceAccount:${GCS_SERVICE_AGENT}" \
-  --role="roles/cloudkms.cryptoKeyEncrypterDecrypter" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-Updated IAM policy for key [lab11-symmetric-key].
+Authorized service account ... to use key ...
 ```
 
 Now create the bucket with CMEK enabled:
 
 ```bash
-KMS_KEY_ID="projects/${PROJECT_ID}/locations/${REGION}/keyRings/${KEYRING_NAME}/cryptoKeys/${KEY_NAME}"
-
 gcloud storage buckets create "gs://lab11-cmek-bucket-${PROJECT_ID}" \
   --location="${REGION}" \
-  --default-encryption-key="${KMS_KEY_ID}" \
+  --default-encryption-key="${KMS_KEY_RESOURCE}" \
   --project="${PROJECT_ID}"
 ```
 
@@ -871,15 +848,14 @@ Verify the bucket has CMEK configured:
 
 ```bash
 gcloud storage buckets describe "gs://lab11-cmek-bucket-${PROJECT_ID}" \
-  --format="yaml(name,encryption)" \
+  --format="table(name,default_kms_key)" \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
-```yaml
-encryption:
-  defaultKmsKeyName: projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key
-name: lab11-cmek-bucket-YOUR_PROJECT
+```
+NAME                              DEFAULT_KMS_KEY
+lab11-cmek-bucket-YOUR_PROJECT    projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key
 ```
 
 Write an object to the CMEK bucket and verify its encryption key:
@@ -891,47 +867,60 @@ echo "This object is protected by my CMEK key" | \
 
 gcloud storage objects describe \
   "gs://lab11-cmek-bucket-${PROJECT_ID}/test-object.txt" \
-  --format="yaml(name,kmsKey)" \
+  --format="table(name,kms_key)" \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
-```yaml
-kmsKey: projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key/cryptoKeyVersions/1
-name: lab11-cmek-bucket-YOUR_PROJECT/test-object.txt
+```
+NAME                                          KMS_KEY
+lab11-cmek-bucket-YOUR_PROJECT/test-object.txt  projects/YOUR_PROJECT/.../lab11-symmetric-key/cryptoKeyVersions/1
 ```
 
 The object is encrypted with your key, version 1. When key rotation occurs, new objects
 will use version 2; this object retains version 1 encryption until you explicitly
 re-encrypt it or it is overwritten.
 
-> **Break it** — disable the KMS key and try to read the object:
->
-> ```bash
-> gcloud kms keys versions disable 1 \
->   --key="${KEY_NAME}" \
->   --keyring="${KEYRING_NAME}" \
->   --location="${REGION}" \
->   --project="${PROJECT_ID}"
->
-> gcloud storage cp \
->   "gs://lab11-cmek-bucket-${PROJECT_ID}/test-object.txt" /tmp/recovered.txt \
->   --project="${PROJECT_ID}"
-> ```
->
-> Expected error:
-> ```
-> ERROR: ... FAILED_PRECONDITION: The key ... is not enabled.
-> ```
->
-> Re-enable the key version to restore access:
-> ```bash
-> gcloud kms keys versions enable 1 \
->   --key="${KEY_NAME}" \
->   --keyring="${KEYRING_NAME}" \
->   --location="${REGION}" \
->   --project="${PROJECT_ID}"
-> ```
+**Break it** — disable the KMS key and try to read the object:
+
+```bash
+gcloud kms keys versions disable 1 \
+  --key="${KEY_NAME}" \
+  --keyring="${KEYRING_NAME}" \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}"
+
+echo "Waiting for GCS to enforce the key disable..."
+until ! gcloud storage cp \
+  "gs://lab11-cmek-bucket-${PROJECT_ID}/test-object.txt" /tmp/recovered.txt \
+  --project="${PROJECT_ID}" 2>/dev/null; do
+  echo "  still accessible — retrying in 10s..."; sleep 10
+done
+echo "Access denied — key revocation is now enforced."
+```
+
+Expected error (shown when the loop exits):
+```
+ERROR: ... FAILED_PRECONDITION: The key ... is not enabled.
+```
+
+Re-enable the key version to restore access:
+
+```bash
+gcloud kms keys versions enable 1 \
+  --key="${KEY_NAME}" \
+  --keyring="${KEYRING_NAME}" \
+  --location="${REGION}" \
+  --project="${PROJECT_ID}"
+
+echo "Waiting for GCS to restore access..."
+until gcloud storage cp \
+  "gs://lab11-cmek-bucket-${PROJECT_ID}/test-object.txt" /tmp/recovered.txt \
+  --project="${PROJECT_ID}" 2>/dev/null; do
+  echo "  still denied — retrying in 10s..."; sleep 10
+done
+echo "Access restored — key version is active again."
+```
 
 ---
 
@@ -949,24 +938,25 @@ REGION="us-central1"
 KEYRING_NAME="lab11-keyring"
 KEY_NAME="lab11-symmetric-key"
 
-# Get the project number (needed for the Cloud SQL service agent)
+# Provision the Cloud SQL service agent and grant it KMS access
+gcloud beta services identity create \
+  --service=sqladmin.googleapis.com \
+  --project="${PROJECT_ID}"
+
 PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" \
   --format="value(projectNumber)")
 
-echo "Project number: ${PROJECT_NUMBER}"
-
-# Grant the Cloud SQL service agent access to the KMS key
-gcloud kms keys add-iam-policy-binding "${KEY_NAME}" \
+echo "Granting KMS access to Cloud SQL service agent..."
+until gcloud kms keys add-iam-policy-binding "${KEY_NAME}" \
   --keyring="${KEYRING_NAME}" \
   --location="${REGION}" \
   --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-cloud-sql.iam.gserviceaccount.com" \
   --role="roles/cloudkms.cryptoKeyEncrypterDecrypter" \
-  --project="${PROJECT_ID}"
-```
-
-Expected output:
-```
-Updated IAM policy for key [lab11-symmetric-key].
+  --project="${PROJECT_ID}" 2>/dev/null; do
+  echo "  not yet — retrying in 10s..."; sleep 10
+done
+echo "IAM binding applied. Waiting 30s for propagation before instance creation..."
+sleep 30
 ```
 
 Create the Cloud SQL instance with CMEK. Use `db-f1-micro` (cheapest tier) for this
@@ -984,6 +974,16 @@ gcloud sql instances create lab11-sql-cmek \
   --project="${PROJECT_ID}"
 ```
 
+> If this fails with a permission error on the KMS key, wait 30 seconds and re-run —
+> IAM propagation can take longer than the sleep above in some projects.
+
+GCP will prompt you with a warning about key destruction risk — type `Y` to confirm:
+```
+WARNING: You are creating a Cloud SQL instance encrypted with a customer-managed key.
+If anyone destroys a customer-managed key, all data encrypted with it will be permanently lost.
+Do you want to proceed? (Y/n): Y
+```
+
 Expected output (creation takes 3-5 minutes):
 ```
 Creating Cloud SQL instance for POSTGRES_15...done.
@@ -997,16 +997,13 @@ Verify the disk encryption key on the instance:
 ```bash
 gcloud sql instances describe lab11-sql-cmek \
   --project="${PROJECT_ID}" \
-  --format="yaml(name,diskEncryptionConfiguration,diskEncryptionStatus)"
+  --format="table(name,diskEncryptionStatus.kmsKeyVersionName)"
 ```
 
 Expected output:
-```yaml
-diskEncryptionConfiguration:
-  kmsKeyName: projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key
-diskEncryptionStatus:
-  kmsKeyVersionName: projects/YOUR_PROJECT/locations/us-central1/keyRings/lab11-keyring/cryptoKeys/lab11-symmetric-key/cryptoKeyVersions/1
-name: lab11-sql-cmek
+```
+NAME            KMS_KEY_VERSION_NAME
+lab11-sql-cmek  .../lab11-symmetric-key/cryptoKeyVersions/1
 ```
 
 > **Why does this matter?** With CMEK on Cloud SQL, you have the ability to immediately
