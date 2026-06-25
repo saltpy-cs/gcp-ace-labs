@@ -715,15 +715,13 @@ is how you learn to debug Cloud Build.
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
-
-cp -r lab12-app /tmp/lab12-cicd
 ```
 
 Submit the build. The source directory is uploaded to Cloud Storage and the build runs
 on Cloud Build workers:
 
 ```bash
-gcloud builds submit /tmp/lab12-cicd \
+gcloud builds submit lab12-app \
   --config=lab12-main.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
@@ -732,7 +730,7 @@ gcloud builds submit /tmp/lab12-cicd \
 Expected output (abbreviated):
 ```
 Creating temporary tarball archive of 4 file(s) totalling 1.2 KiB before compression.
-Uploading tarball of [/tmp/lab12-cicd] to [gs://YOUR_PROJECT_cloudbuild/source/...]
+Uploading tarball of [lab12-app] to [gs://YOUR_PROJECT_cloudbuild/source/...]
 ...
 BUILD
 Starting Step #0 - "build"
@@ -752,10 +750,12 @@ Finished Step #4 - "push-sha"
 DONE
 ```
 
-**Now intentionally break the smoke test to observe a failure.** Edit the Dockerfile
-to make the health endpoint broken, then resubmit:
+**Now intentionally break the smoke test to observe a failure.** Copy the app to a
+temporary directory, overwrite the Dockerfile with a broken version, then resubmit:
 
 ```bash
+cp -r lab12-app /tmp/lab12-cicd
+
 cat > /tmp/lab12-cicd/Dockerfile << 'EOF'
 FROM golang:1.21-alpine AS build
 WORKDIR /src
@@ -789,24 +789,10 @@ BUILD FAILURE
 
 This is the point: **the push steps never run because the smoke test failed**. The
 `waitFor` dependency chain means Cloud Build stops as soon as any step exits with a
-non-zero status code. Restore the working Dockerfile and resubmit:
+non-zero status code. Resubmit using the original checked-in source:
 
 ```bash
-cat > /tmp/lab12-cicd/Dockerfile << 'EOF'
-FROM golang:1.21-alpine AS build
-WORKDIR /src
-COPY go.mod .
-COPY main.go .
-RUN go build -o /app/server .
-
-FROM alpine:3.19
-WORKDIR /app
-COPY --from=build /app/server .
-EXPOSE 8080
-CMD ["./server"]
-EOF
-
-gcloud builds submit /tmp/lab12-cicd \
+gcloud builds submit lab12-app \
   --config=lab12-main.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
@@ -868,9 +854,9 @@ gcloud source repos clone lab12-source /tmp/lab12-source-repo \
   --project="${PROJECT_ID}"
 
 # Copy the app source and cloudbuild.yaml into the cloned repo
-cp /tmp/lab12-cicd/main.go    /tmp/lab12-source-repo/
-cp /tmp/lab12-cicd/go.mod     /tmp/lab12-source-repo/
-cp /tmp/lab12-cicd/Dockerfile /tmp/lab12-source-repo/
+cp lab12-app/main.go    /tmp/lab12-source-repo/
+cp lab12-app/go.mod     /tmp/lab12-source-repo/
+cp lab12-app/Dockerfile /tmp/lab12-source-repo/
 cp lab12-main.cloudbuild.yaml /tmp/lab12-source-repo/cloudbuild.yaml
 
 # Commit and push
