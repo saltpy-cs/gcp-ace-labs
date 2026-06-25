@@ -462,9 +462,11 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --role="roles/iam.serviceAccountUser"
 ```
 
-Expected output (last binding):
+Expected output (last binding — followed by the full IAM policy YAML, which is normal):
 ```
 Updated IAM policy for project [YOUR_PROJECT].
+bindings:
+- ...
 ```
 
 ---
@@ -500,13 +502,13 @@ Verify the repository was created and note the hostname format:
 gcloud artifacts repositories describe "${REPO}" \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="table(name,format,location,createTime)"
+  --format="table(name.basename(),format,name.segment(3):label=LOCATION,createTime)"
 ```
 
 Expected output:
 ```
-NAME                                                                          FORMAT  LOCATION     CREATE_TIME
-projects/YOUR_PROJECT/locations/us-central1/repositories/lab12-repo  DOCKER  us-central1  2024-01-15T10:00:00
+NAME        FORMAT  LOCATION     CREATE_TIME
+lab12-repo  DOCKER  us-central1  2026-06-...
 ```
 
 List all repositories in the project to see what already exists (Cloud Build and Cloud Run
@@ -516,7 +518,7 @@ often auto-create repositories):
 gcloud artifacts repositories list \
   --location="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="table(name,format,location)"
+  --format="table(name.basename(),format,name.segment(3):label=LOCATION)"
 ```
 
 Now configure Docker to authenticate against your Artifact Registry endpoint. This writes
@@ -546,84 +548,22 @@ Build a minimal Go HTTP server locally, containerise it, and push the image to t
 Artifact Registry repository you just created. This is the "manual CI" path — building
 locally before you automate it with Cloud Build.
 
-Create the application source:
-
-```bash
-mkdir -p /tmp/lab12-app
-
-cat > /tmp/lab12-app/main.go << 'GOEOF'
-package main
-
-import (
-    "fmt"
-    "log"
-    "net/http"
-    "os"
-)
-
-func main() {
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080"
-    }
-
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        version := os.Getenv("APP_VERSION")
-        if version == "" {
-            version = "1.0.0"
-        }
-        fmt.Fprintf(w, "Lab 12 app — version %s\nPath: %s\n", version, r.URL.Path)
-        log.Printf("GET %s — served version %s", r.URL.Path, version)
-    })
-
-    http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-        w.WriteHeader(http.StatusOK)
-        fmt.Fprintln(w, "ok")
-    })
-
-    log.Printf("Listening on port %s", port)
-    if err := http.ListenAndServe(":"+port, nil); err != nil {
-        log.Fatal(err)
-    }
-}
-GOEOF
-
-cat > /tmp/lab12-app/go.mod << 'EOF'
-module lab12-app
-
-go 1.21
-EOF
-
-cat > /tmp/lab12-app/Dockerfile << 'EOF'
-FROM golang:1.21-alpine AS build
-WORKDIR /src
-COPY go.mod .
-COPY main.go .
-RUN go build -o /app/server .
-
-FROM alpine:3.19
-WORKDIR /app
-COPY --from=build /app/server .
-EXPOSE 8080
-CMD ["./server"]
-EOF
-```
-
 Build the Docker image locally and tag it with the full Artifact Registry path:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 IMAGE_BASE="us-central1-docker.pkg.dev/${PROJECT_ID}/lab12-repo/lab12-app"
 
-docker build -t "${IMAGE_BASE}:v1.0.0" /tmp/lab12-app
+docker build -t "${IMAGE_BASE}:v1.0.0" lab12-app
 ```
 
-Expected output (multi-stage build, last few lines):
+Expected output (multi-stage build, last few lines — build time ~10-15s on first run):
 ```
- => [build 4/4] RUN go build -o /app/server .                              5.2s
- => [stage-1 2/2] COPY --from=build /app/server .                          0.1s
- => exporting to image                                                       0.1s
+ => [build 5/5] RUN go build -o /app/server .                              3.8s
+ => [stage-1 3/3] COPY --from=build /app/server .                          0.0s
+ => exporting to image                                                      0.2s
  => => naming to us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app:v1.0.0
+ => => unpacking to us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app:v1.0.0
 ```
 
 Push the image to Artifact Registry:
@@ -632,10 +572,12 @@ Push the image to Artifact Registry:
 docker push "${IMAGE_BASE}:v1.0.0"
 ```
 
-Expected output:
+Expected output (Docker Desktop pushes layers during build, so they'll report as already existing):
 ```
 The push refers to repository [us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app]
-v1.0.0: digest: sha256:abc123... size: 789
+2ab192d5f71f: Layer already exists
+...
+v1.0.0: digest: sha256:fe2a... size: 855
 ```
 
 Also tag it as `latest` and push that tag too:
@@ -650,14 +592,24 @@ Verify the image is in Artifact Registry:
 ```bash
 gcloud artifacts docker images list \
   "us-central1-docker.pkg.dev/${PROJECT_ID}/lab12-repo" \
-  --format="table(package,version,tags,createTime)" \
+  --format="table(IMAGE,DIGEST,CREATE_TIME)" \
+  --project="${PROJECT_ID}"
+
+gcloud artifacts docker tags list \
+  "us-central1-docker.pkg.dev/${PROJECT_ID}/lab12-repo/lab12-app" \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
 ```
-PACKAGE                                                                               VERSION       TAGS          CREATE_TIME
-us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app  sha256:abc123...  latest,v1.0.0  2024-01-15T10:10:00
+IMAGE                                                           DIGEST        CREATE_TIME
+us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app  sha256:9ffc...  2026-06-...
+us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app  sha256:a82b...  2026-06-...
+us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app  sha256:fe2a...  2026-06-...
+
+TAG     IMAGE
+latest  us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app@sha256:fe2a...
+v1.0.0  us-central1-docker.pkg.dev/YOUR_PROJECT/lab12-repo/lab12-app@sha256:fe2a...
 ```
 
 Describe the specific image to see its full digest and metadata:
@@ -787,10 +739,7 @@ is how you learn to debug Cloud Build.
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 
-mkdir -p /tmp/lab12-cicd
-cp /tmp/lab12-app/main.go /tmp/lab12-cicd/
-cp /tmp/lab12-app/go.mod  /tmp/lab12-cicd/
-cp /tmp/lab12-app/Dockerfile /tmp/lab12-cicd/
+cp -r lab12-app /tmp/lab12-cicd
 
 cat > /tmp/lab12-cicd/cloudbuild.yaml << 'YAMLEOF'
 steps:
@@ -1938,8 +1887,7 @@ for role in roles/artifactregistry.writer roles/run.developer roles/iam.serviceA
 done
 
 echo "=== Cleaning up local temp directories ==="
-rm -rf /tmp/lab12-app \
-       /tmp/lab12-pulltest \
+rm -rf /tmp/lab12-pulltest \
        /tmp/lab12-cicd \
        /tmp/lab12-subs \
        /tmp/lab12-source-repo \
