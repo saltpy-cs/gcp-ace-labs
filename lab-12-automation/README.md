@@ -762,11 +762,18 @@ gcloud builds submit lab12-app-broken \
 
 Expected output (the build fails at the smoke test step):
 ```
-Starting Step #2 - "smoke-test"
-Step #2 - "smoke-test": curl: (7) Failed to connect to lab12-test port 8080 after 0 ms: Connection refused
-ERROR
-ERROR: build step 2 "curlimages/curl:8.5.0" failed: step exited with non-zero status: 7
-BUILD FAILURE
+Creating temporary archive of 3 file(s) totalling 1.1 KiB before compression.
+Uploading tarball of [lab12-app-broken] to [gs://YOUR_PROJECT_cloudbuild/source/...]
+Created [https://cloudbuild.googleapis.com/v1/projects/YOUR_PROJECT/locations/us-central1/builds/xxxxxxxx-...].
+Logs are available at [ https://console.cloud.google.com/cloud-build/builds;region=us-central1/xxxxxxxx-...?project=YOUR_PROJECT_NUMBER ].
+
+gcloud builds submit only displays logs from Cloud Storage. To view logs from Cloud Logging, run:
+gcloud beta builds submit
+
+Waiting for build to complete. Polling interval: 1 second(s).
+
+BUILD FAILURE: Build step failure: build step 2 "curlimages/curl:8.5.0" failed: step exited with non-zero status: 7
+ERROR: (gcloud.builds.submit) build xxxxxxxx-... completed with status "FAILURE"
 ```
 
 This is the point: **the push steps never run because the smoke test failed**. The
