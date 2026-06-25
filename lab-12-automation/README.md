@@ -849,6 +849,7 @@ git init
 git remote add origin "${REPO_URL}"
 git config --local user.email "lab12@example.com"
 git config --local user.name "Lab 12"
+git config --local credential.helper '!f() { echo "username=oauth2accesstoken"; echo "password=$(gcloud auth print-access-token)"; }; f'
 git add .
 git commit -m "Initial commit: lab12 app source"
 git push -u origin main
