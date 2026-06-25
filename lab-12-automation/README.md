@@ -933,6 +933,7 @@ above, or run:
 ```bash
 BUILD_ID=$(gcloud builds list \
   --region="${REGION}" \
+  --filter="substitutions._ENV=staging" \
   --limit=1 \
   --format="value(id)" \
   --project="${PROJECT_ID}")
