@@ -831,7 +831,7 @@ gcloud source repos create lab12-source \
 Expected output:
 ```
 Created [lab12-source].
-warning: You may be cloning an empty repository.
+WARNING: You may be billed for this repository. See https://cloud.google.com/source-repositories/docs/pricing for details.
 ```
 
 Clone it locally and push the lab12 source:
