@@ -1355,15 +1355,30 @@ name to force a failure at step 3:
 
 Expected output (bucket creation fails, cleanup still runs and removes the topic and subscription that were already created):
 ```
+=== Lab 12 multi-step gcloud script (broken version) ===
+Project: YOUR_PROJECT
+Topic:   lab12-script-topic
+Bucket:  INVALID BUCKET NAME WITH SPACES
+
+--- Step 1: Checking preconditions ---
+All required APIs are enabled.
+
+--- Step 2: Creating Pub/Sub topic and subscription ---
+Created topic [projects/YOUR_PROJECT/topics/lab12-script-topic].
+Topic created: lab12-script-topic
+Created subscription [projects/YOUR_PROJECT/subscriptions/lab12-script-sub].
+Subscription created: lab12-script-sub
+
 --- Step 3: Creating Cloud Storage bucket ---
-ERROR: ...
+Creating gs://INVALID BUCKET NAME WITH SPACES/...
+ERROR: (gcloud.storage.buckets.create) HTTPError 400: Invalid bucket name: 'INVALID BUCKET NAME WITH SPACES'
+
 === Cleanup (exit code: 1) ===
 Deleting Pub/Sub subscription...
-Deleted subscription...
 Deleting Pub/Sub topic...
-Deleted topic...
 Deleting Cloud Storage bucket...
   Bucket not found — skipping.
+=== Cleanup complete ===
 ```
 
 The `set -e` flag caused the script to exit immediately when `gcloud storage buckets create`
