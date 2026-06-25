@@ -1346,16 +1346,11 @@ fires on any exit, whether from `exit 0`, `exit 1`, or an unexpected error from
 `set -euo pipefail`. This is the standard pattern for resource cleanup in bash scripts
 and mirrors how `defer` works in Go or `finally` in Java.
 
-To test the failure path, introduce an error before the cleanup. Copy the script to a
-temporary location and modify the copy so the original is preserved:
+To test the failure path, run the checked-in broken version which uses an invalid bucket
+name to force a failure at step 3:
 
 ```bash
-cp lab12-script.sh /tmp/lab12-test-fail.sh
-# Introduce an invalid bucket name to force a failure at step 3
-sed -i 's/BUCKET_NAME="${PROJECT_ID}-lab12-script"/BUCKET_NAME="INVALID BUCKET NAME WITH SPACES"/' \
-  /tmp/lab12-test-fail.sh
-
-/tmp/lab12-test-fail.sh
+./lab12-script-broken.sh
 ```
 
 Expected output (bucket creation fails, cleanup still runs and removes the topic and subscription that were already created):
@@ -1687,7 +1682,6 @@ done
 
 echo "=== Cleaning up local temp directories ==="
 rm -rf /tmp/lab12-source-repo \
-       /tmp/lab12-test-fail.sh \
        /tmp/lab12-dm-updated.yaml
 
 echo "=== Cleanup complete ==="
