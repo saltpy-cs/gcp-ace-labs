@@ -1132,15 +1132,34 @@ gcloud scheduler jobs describe lab12-health-ping \
   --project="${PROJECT_ID}"
 ```
 
-Expected output (key fields):
+Expected output:
 ```yaml
-lastAttemptTime: '2024-01-15T10:45:00.000000Z'
+attemptDeadline: 30s
+description: Keep-alive ping for lab12-app Cloud Run service
+httpTarget:
+  headers:
+    User-Agent: Google-Cloud-Scheduler
+  httpMethod: GET
+  uri: https://lab12-app-xxxxxxxxxx-uc.a.run.app/health
 name: projects/YOUR_PROJECT/locations/us-central1/jobs/lab12-health-ping
+retryConfig:
+  maxBackoffDuration: 3600s
+  maxDoublings: 5
+  maxRetryDuration: 90s
+  minBackoffDuration: 5s
+  retryCount: 3
 schedule: '*/5 * * * *'
+scheduleTime: '2026-01-15T10:55:00Z'
 state: ENABLED
 status:
-  code: 0   # 0 = success
+  code: -1    # -1 = no attempt yet; will change to 0 (success) after first run
+timeZone: Etc/UTC
+userUpdateTime: '2026-01-15T10:50:00Z'
 ```
+
+`status.code: -1` means the job has not yet made an attempt — it was just created and the
+first scheduled run (shown in `scheduleTime`) has not fired yet. After the first successful
+invocation it will change to `0`.
 
 Now deliberately break the scheduler by pointing it at a non-existent path to observe a
 failure and retry:
