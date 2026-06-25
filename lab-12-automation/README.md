@@ -750,29 +750,12 @@ Finished Step #4 - "push-sha"
 DONE
 ```
 
-**Now intentionally break the smoke test to observe a failure.** Copy the app to a
-temporary directory, overwrite the Dockerfile with a broken version, then resubmit:
+**Now intentionally break the smoke test to observe a failure.** `lab12-app-broken`
+contains an identical app but with a Dockerfile that runs on the wrong port, so the
+health check cannot connect:
 
 ```bash
-cp -r lab12-app /tmp/lab12-cicd
-
-cat > /tmp/lab12-cicd/Dockerfile << 'EOF'
-FROM golang:1.21-alpine AS build
-WORKDIR /src
-COPY go.mod .
-COPY main.go .
-RUN go build -o /app/server .
-
-FROM alpine:3.19
-WORKDIR /app
-COPY --from=build /app/server .
-EXPOSE 8080
-# Intentional break: run on wrong port so health check fails
-ENV PORT=9999
-CMD ["./server"]
-EOF
-
-gcloud builds submit /tmp/lab12-cicd \
+gcloud builds submit lab12-app-broken \
   --config=lab12-main.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
@@ -1587,8 +1570,7 @@ for role in roles/artifactregistry.writer roles/run.developer roles/iam.serviceA
 done
 
 echo "=== Cleaning up local temp directories ==="
-rm -rf /tmp/lab12-cicd \
-       /tmp/lab12-source-repo \
+rm -rf /tmp/lab12-source-repo \
        /tmp/lab12-test-fail.sh \
        /tmp/lab12-dm-updated.yaml
 
