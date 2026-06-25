@@ -1,0 +1,14 @@
+resources:
+  - name: lab12-dm-bucket
+    type: storage.v1.bucket
+    properties:
+      location: US
+      storageClass: STANDARD
+      iamConfiguration:
+        uniformBucketLevelAccess:
+          enabled: true
+
+  - name: lab12-dm-topic
+    type: pubsub.v1.topic
+    properties:
+      topic: lab12-dm-topic

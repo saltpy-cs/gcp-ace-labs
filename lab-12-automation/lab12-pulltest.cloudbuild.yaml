@@ -1,0 +1,17 @@
+steps:
+  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:latest'
+    id: 'run-app-check'
+    args: ['sh', '-c', 'echo "Image pulled and started successfully"']
+    env:
+      - 'APP_VERSION=1.0.0'
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'describe-image'
+    args:
+      - 'artifacts'
+      - 'docker'
+      - 'images'
+      - 'describe'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:latest'
+      - '--project=$PROJECT_ID'
+    waitFor: ['run-app-check']

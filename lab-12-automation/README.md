@@ -652,39 +652,13 @@ Write a `cloudbuild.yaml` that:
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
-IMAGE_BASE="us-central1-docker.pkg.dev/${PROJECT_ID}/lab12-repo/lab12-app"
-
-mkdir -p /tmp/lab12-pulltest
-
-cat > /tmp/lab12-pulltest/cloudbuild.yaml << YAMLEOF
-steps:
-  - name: '${IMAGE_BASE}:latest'
-    id: 'run-app-check'
-    args: ['sh', '-c', 'echo "Image pulled and started successfully"']
-    env:
-      - 'APP_VERSION=1.0.0'
-
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'describe-image'
-    args:
-      - 'artifacts'
-      - 'docker'
-      - 'images'
-      - 'describe'
-      - '${IMAGE_BASE}:latest'
-      - '--project=\$PROJECT_ID'
-    waitFor: ['run-app-check']
-
-substitutions:
-  _IMAGE_BASE: '${IMAGE_BASE}'
-YAMLEOF
 ```
 
 Submit this build to Cloud Build:
 
 ```bash
 gcloud builds submit \
-  --config=/tmp/lab12-pulltest/cloudbuild.yaml \
+  --config=lab12-pulltest.cloudbuild.yaml \
   --no-source \
   --project="${PROJECT_ID}" \
   --region="${REGION}"
@@ -1014,69 +988,13 @@ label is embedded.
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
-
-mkdir -p /tmp/lab12-subs
-
-# Copy source files
-cp /tmp/lab12-cicd/main.go    /tmp/lab12-subs/
-cp /tmp/lab12-cicd/go.mod     /tmp/lab12-subs/
-cp /tmp/lab12-cicd/Dockerfile /tmp/lab12-subs/
-
-cat > /tmp/lab12-subs/cloudbuild.yaml << 'YAMLEOF'
-substitutions:
-  _ENV: 'dev'             # default — can be overridden at submit time
-  _IMAGE_TAG: 'latest'    # can be overridden per-trigger
-
-steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
-      - '--build-arg'
-      - 'ENV=${_ENV}'
-      - '--build-arg'
-      - 'TAG=${_IMAGE_TAG}'
-      - '.'
-
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'report-substitutions'
-    args:
-      - 'builds'
-      - 'log'
-      - '--region'
-      - 'us-central1'
-      - '--stream'
-      - '$BUILD_ID'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "===== Substitutions report ====="
-        echo "Environment:   ${_ENV}"
-        echo "Image tag:     ${_IMAGE_TAG}"
-        echo "Short SHA:     $SHORT_SHA"
-        echo "Commit SHA:    $COMMIT_SHA"
-        echo "Build ID:      $BUILD_ID"
-        echo "Project:       $PROJECT_ID"
-        echo "Trigger:       $TRIGGER_NAME"
-        echo "================================"
-    waitFor: ['build']
-
-images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-YAMLEOF
 ```
 
 Submit the build passing custom substitution values:
 
 ```bash
-gcloud builds submit /tmp/lab12-subs \
-  --config=/tmp/lab12-subs/cloudbuild.yaml \
+gcloud builds submit lab12-app \
+  --config=lab12-subs.cloudbuild.yaml \
   --substitutions="_ENV=staging,_IMAGE_TAG=v2.0.0" \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
@@ -1101,8 +1019,8 @@ that conditionally branch on whether a build was triggered or manual.
 Submit again without the substitutions to see the defaults apply:
 
 ```bash
-gcloud builds submit /tmp/lab12-subs \
-  --config=/tmp/lab12-subs/cloudbuild.yaml \
+gcloud builds submit lab12-app \
+  --config=lab12-subs.cloudbuild.yaml \
   --region="${REGION}" \
   --project="${PROJECT_ID}"
 ```
@@ -1288,131 +1206,11 @@ exercise writes a gcloud script that:
 4. Verifies the message can be pulled from a subscription
 5. Cleans up the resources it created, even if an earlier step failed
 
-```bash
-cat > /tmp/lab12-script.sh << 'BASHEOF'
-#!/bin/bash
-set -euo pipefail
-
-# ── Configuration ──────────────────────────────────────────────────────────────
-PROJECT_ID=$(gcloud config get-value project)
-REGION="us-central1"
-TOPIC_NAME="lab12-script-topic"
-SUB_NAME="lab12-script-sub"
-BUCKET_NAME="${PROJECT_ID}-lab12-script"
-
-echo "=== Lab 12 multi-step gcloud script ==="
-echo "Project: ${PROJECT_ID}"
-echo "Topic:   ${TOPIC_NAME}"
-echo "Bucket:  ${BUCKET_NAME}"
-echo ""
-
-# ── Cleanup function (runs on exit, success or failure) ───────────────────────
-cleanup() {
-  local exit_code=$?
-  echo ""
-  echo "=== Cleanup (exit code: ${exit_code}) ==="
-
-  echo "Deleting Pub/Sub subscription..."
-  gcloud pubsub subscriptions delete "${SUB_NAME}" \
-    --quiet --project="${PROJECT_ID}" 2>/dev/null \
-    || echo "  Subscription not found — skipping."
-
-  echo "Deleting Pub/Sub topic..."
-  gcloud pubsub topics delete "${TOPIC_NAME}" \
-    --quiet --project="${PROJECT_ID}" 2>/dev/null \
-    || echo "  Topic not found — skipping."
-
-  echo "Deleting Cloud Storage bucket..."
-  gcloud storage rm -r "gs://${BUCKET_NAME}" \
-    --quiet 2>/dev/null \
-    || echo "  Bucket not found — skipping."
-
-  echo "=== Cleanup complete ==="
-  exit ${exit_code}
-}
-
-# Register the cleanup function to run on any exit
-trap cleanup EXIT
-
-# ── Step 1: Check preconditions ───────────────────────────────────────────────
-echo "--- Step 1: Checking preconditions ---"
-
-# Verify required APIs are enabled
-for api in pubsub.googleapis.com storage.googleapis.com; do
-  if ! gcloud services list --enabled \
-       --filter="name=${api}" \
-       --format="value(name)" \
-       --project="${PROJECT_ID}" | grep -q "${api}"; then
-    echo "ERROR: API ${api} is not enabled. Run: gcloud services enable ${api}"
-    exit 1
-  fi
-done
-echo "All required APIs are enabled."
-
-# ── Step 2: Create Pub/Sub topic and subscription ─────────────────────────────
-echo ""
-echo "--- Step 2: Creating Pub/Sub topic and subscription ---"
-
-gcloud pubsub topics create "${TOPIC_NAME}" \
-  --project="${PROJECT_ID}"
-echo "Topic created: ${TOPIC_NAME}"
-
-gcloud pubsub subscriptions create "${SUB_NAME}" \
-  --topic="${TOPIC_NAME}" \
-  --ack-deadline=60 \
-  --message-retention-duration=1h \
-  --project="${PROJECT_ID}"
-echo "Subscription created: ${SUB_NAME}"
-
-# ── Step 3: Create a Cloud Storage bucket ────────────────────────────────────
-echo ""
-echo "--- Step 3: Creating Cloud Storage bucket ---"
-
-gcloud storage buckets create "gs://${BUCKET_NAME}" \
-  --location="${REGION}" \
-  --uniform-bucket-level-access \
-  --project="${PROJECT_ID}"
-echo "Bucket created: gs://${BUCKET_NAME}"
-
-# ── Step 4: Publish a message ─────────────────────────────────────────────────
-echo ""
-echo "--- Step 4: Publishing test message ---"
-
-MESSAGE_ID=$(gcloud pubsub topics publish "${TOPIC_NAME}" \
-  --message='{"event":"lab12-test","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' \
-  --project="${PROJECT_ID}" \
-  --format="value(messageIds[0])")
-
-echo "Published message ID: ${MESSAGE_ID}"
-
-# ── Step 5: Pull and verify the message ───────────────────────────────────────
-echo ""
-echo "--- Step 5: Pulling and verifying message ---"
-
-# Pull with --limit=1 --auto-ack
-PULLED=$(gcloud pubsub subscriptions pull "${SUB_NAME}" \
-  --limit=1 \
-  --auto-ack \
-  --format="value(message.data)" \
-  --project="${PROJECT_ID}")
-
-if [ -z "${PULLED}" ]; then
-  echo "ERROR: No message received from subscription."
-  exit 1
-fi
-
-echo "Message received (base64-decoded): $(echo "${PULLED}" | base64 -d)"
-echo ""
-echo "=== All steps succeeded ==="
-BASHEOF
-
-chmod +x /tmp/lab12-script.sh
-```
-
-Run the script:
+The script is already checked in as `lab12-script.sh`. Make it executable and run it:
 
 ```bash
-bash /tmp/lab12-script.sh
+chmod +x lab12-script.sh
+bash lab12-script.sh
 ```
 
 Expected output:
@@ -1460,15 +1258,16 @@ fires on any exit, whether from `exit 0`, `exit 1`, or an unexpected error from
 `set -euo pipefail`. This is the standard pattern for resource cleanup in bash scripts
 and mirrors how `defer` works in Go or `finally` in Java.
 
-To test the failure path, introduce an error before the cleanup:
+To test the failure path, introduce an error before the cleanup. Copy the script to a
+temporary location and modify the copy so the original is preserved:
 
 ```bash
-# Edit the script to intentionally fail at step 3
-# by trying to create a bucket with an invalid name
+cp lab12-script.sh /tmp/lab12-test-fail.sh
+# Introduce an invalid bucket name to force a failure at step 3
 sed -i 's/BUCKET_NAME="${PROJECT_ID}-lab12-script"/BUCKET_NAME="INVALID BUCKET NAME WITH SPACES"/' \
-  /tmp/lab12-script.sh
+  /tmp/lab12-test-fail.sh
 
-bash /tmp/lab12-script.sh
+bash /tmp/lab12-test-fail.sh
 ```
 
 Expected output (bucket creation fails, cleanup still runs and removes the topic and subscription that were already created):
@@ -1488,9 +1287,6 @@ The `set -e` flag caused the script to exit immediately when `gcloud storage buc
 failed. The `trap` then ran cleanup, removing the topic and subscription that were already
 created — preventing a leak of resources.
 
-Restore the script to the working version for the cleanup at the end of the lab (or simply
-do not save — it was in `/tmp` all along).
-
 ---
 
 ### Exercise 9 — Create a Cloud Deployment Manager Config and Deploy It
@@ -1500,29 +1296,10 @@ a unit called a **deployment**. This exercise creates a deployment that provisio
 Storage bucket and a Pub/Sub topic. You will then update the deployment to add a second
 bucket, then delete the entire deployment in one command.
 
-Create the Deployment Manager configuration file:
+The configuration is already checked in as `lab12-dm.deployment.yaml`.
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
-
-mkdir -p /tmp/lab12-dm
-
-cat > /tmp/lab12-dm/deployment.yaml << YAMLEOF
-resources:
-  - name: lab12-dm-bucket
-    type: storage.v1.bucket
-    properties:
-      location: US
-      storageClass: STANDARD
-      iamConfiguration:
-        uniformBucketLevelAccess:
-          enabled: true
-
-  - name: lab12-dm-topic
-    type: pubsub.v1.topic
-    properties:
-      topic: lab12-dm-topic
-YAMLEOF
 ```
 
 Deploy it. The `--preview` flag shows what Deployment Manager would create without actually
@@ -1530,7 +1307,7 @@ creating anything — useful for validating configuration before applying it:
 
 ```bash
 gcloud deployment-manager deployments create lab12-dm-deploy \
-  --config=/tmp/lab12-dm/deployment.yaml \
+  --config=lab12-dm.deployment.yaml \
   --preview \
   --project="${PROJECT_ID}"
 ```
@@ -1557,7 +1334,7 @@ gcloud deployment-manager deployments cancel-preview lab12-dm-deploy \
 
 # Create for real
 gcloud deployment-manager deployments create lab12-dm-deploy \
-  --config=/tmp/lab12-dm/deployment.yaml \
+  --config=lab12-dm.deployment.yaml \
   --project="${PROJECT_ID}"
 ```
 
@@ -1608,11 +1385,13 @@ lab12-dm-bucket    storage.v1.bucket  IN_USE
 lab12-dm-topic     pubsub.v1.topic    IN_USE
 ```
 
-Update the deployment to add a second bucket. Update in place by modifying the config
-file and running `deployments update`:
+Update the deployment to add a second bucket. Copy the config to a working file, append
+the new resource, and run `deployments update`:
 
 ```bash
-cat >> /tmp/lab12-dm/deployment.yaml << YAMLEOF
+cp lab12-dm.deployment.yaml /tmp/lab12-dm-updated.yaml
+
+cat >> /tmp/lab12-dm-updated.yaml << 'YAMLEOF'
 
   - name: lab12-dm-bucket-logs
     type: storage.v1.bucket
@@ -1625,7 +1404,7 @@ cat >> /tmp/lab12-dm/deployment.yaml << YAMLEOF
 YAMLEOF
 
 gcloud deployment-manager deployments update lab12-dm-deploy \
-  --config=/tmp/lab12-dm/deployment.yaml \
+  --config=/tmp/lab12-dm-updated.yaml \
   --project="${PROJECT_ID}"
 ```
 
@@ -1819,12 +1598,10 @@ for role in roles/artifactregistry.writer roles/run.developer roles/iam.serviceA
 done
 
 echo "=== Cleaning up local temp directories ==="
-rm -rf /tmp/lab12-pulltest \
-       /tmp/lab12-cicd \
-       /tmp/lab12-subs \
+rm -rf /tmp/lab12-cicd \
        /tmp/lab12-source-repo \
-       /tmp/lab12-dm \
-       /tmp/lab12-script.sh
+       /tmp/lab12-test-fail.sh \
+       /tmp/lab12-dm-updated.yaml
 
 echo "=== Cleanup complete ==="
 ```

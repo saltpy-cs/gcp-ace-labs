@@ -1,0 +1,39 @@
+substitutions:
+  _ENV: 'dev'             # default — can be overridden at submit time
+  _IMAGE_TAG: 'latest'    # can be overridden per-trigger
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
+      - '--build-arg'
+      - 'ENV=${_ENV}'
+      - '--build-arg'
+      - 'TAG=${_IMAGE_TAG}'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'report-substitutions'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "===== Substitutions report ====="
+        echo "Environment:   ${_ENV}"
+        echo "Image tag:     ${_IMAGE_TAG}"
+        echo "Short SHA:     $SHORT_SHA"
+        echo "Commit SHA:    $COMMIT_SHA"
+        echo "Build ID:      $BUILD_ID"
+        echo "Project:       $PROJECT_ID"
+        echo "Trigger:       $TRIGGER_NAME"
+        echo "================================"
+    waitFor: ['build']
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/lab12-repo/lab12-app:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
