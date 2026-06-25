@@ -844,9 +844,7 @@ gcloud source repos clone lab12-source /tmp/lab12-source-repo \
   --project="${PROJECT_ID}"
 
 # Copy the app source and cloudbuild.yaml into the cloned repo
-cp lab12-app/main.go    /tmp/lab12-source-repo/
-cp lab12-app/go.mod     /tmp/lab12-source-repo/
-cp lab12-app/Dockerfile /tmp/lab12-source-repo/
+cp -r lab12-app/. /tmp/lab12-source-repo/
 cp lab12-main.cloudbuild.yaml /tmp/lab12-source-repo/cloudbuild.yaml
 
 # Commit and push
