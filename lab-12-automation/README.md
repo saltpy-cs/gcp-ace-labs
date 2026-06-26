@@ -1412,36 +1412,32 @@ gcloud deployment-manager deployments create lab12-dm-deploy \
 
 Expected output:
 ```
-The following will be created or updated:
-NAME              TYPE                  STATE
-lab12-dm-bucket   storage.v1.bucket     TO_BE_CREATED
-lab12-dm-topic    pubsub.v1.topic       TO_BE_CREATED
-
-Previewing resources...done.
-
-NAME                   LAST_OPERATION_TYPE  STATUS   DESCRIPTION
-lab12-dm-deploy        preview              PREVIEW
+The fingerprint of the deployment is b'...'
+Waiting for create [operation-...]...
+done.
+Create operation operation-... completed successfully.
+NAME             TYPE               STATE       ERRORS  INTENT
+lab12-dm-bucket  storage.v1.bucket  IN_PREVIEW  []      CREATE_OR_ACQUIRE
+lab12-dm-topic   pubsub.v1.topic    IN_PREVIEW  []      CREATE_OR_ACQUIRE
 ```
 
-Actually create the resources by cancelling the preview and creating without it:
+Apply the preview to actually create the resources:
 
 ```bash
-# Cancel the preview first
-gcloud deployment-manager deployments cancel-preview lab12-dm-deploy \
-  --project="${PROJECT_ID}"
-
-# Create for real
-gcloud deployment-manager deployments create lab12-dm-deploy \
+gcloud deployment-manager deployments update lab12-dm-deploy \
   --config=lab12-dm.deployment.yaml \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
 ```
-Waiting for create [operation-...]...done.
-Create operation operation-... completed successfully.
-NAME                   LAST_OPERATION_TYPE  STATUS  DESCRIPTION  MANIFEST                  ERRORS
-lab12-dm-deploy        insert               DONE                 manifest-...
+The fingerprint of the deployment is b'...'
+Waiting for update [operation-...]...
+done.
+Update operation operation-... completed successfully.
+NAME             TYPE               STATE      ERRORS  INTENT
+lab12-dm-bucket  storage.v1.bucket  COMPLETED  []
+lab12-dm-topic   pubsub.v1.topic    COMPLETED  []
 ```
 
 Describe the deployment to see what was created:
@@ -1455,17 +1451,24 @@ Expected output:
 ```
 ---
 fingerprint: ...
-id: '1234567890'
+id: '...'
+insertTime: '...'
+manifest: manifest-...
 name: lab12-dm-deploy
-...
-resources:
-- name: lab12-dm-bucket
-  type: storage.v1.bucket
-  url: https://www.googleapis.com/storage/v1/b/lab12-dm-bucket
-- name: lab12-dm-topic
-  type: pubsub.v1.topic
-  url: https://pubsub.googleapis.com/v1/projects/YOUR_PROJECT/topics/lab12-dm-topic
+operation:
+  endTime: '...'
+  name: operation-...
+  operationType: update
+  progress: 100
+  startTime: '...'
+  status: DONE
+  user: YOUR_EMAIL
+NAME             TYPE               STATE      INTENT
+lab12-dm-bucket  storage.v1.bucket  COMPLETED
+lab12-dm-topic   pubsub.v1.topic    COMPLETED
 ```
+
+The `INTENT` column being blank for both rows is expected — it only shows a value during a preview operation.
 
 List all resources in the deployment:
 
@@ -1473,45 +1476,36 @@ List all resources in the deployment:
 gcloud deployment-manager resources list \
   --deployment=lab12-dm-deploy \
   --project="${PROJECT_ID}" \
-  --format="table(name,type,state)"
+  --format="table(name,type)"
 ```
 
 Expected output:
 ```
-NAME               TYPE               STATE
-lab12-dm-bucket    storage.v1.bucket  IN_USE
-lab12-dm-topic     pubsub.v1.topic    IN_USE
+NAME             TYPE
+lab12-dm-bucket  storage.v1.bucket
+lab12-dm-topic   pubsub.v1.topic
 ```
 
-Update the deployment to add a second bucket. Copy the config to a working file, append
-the new resource, and run `deployments update`:
+Update the deployment to add a second bucket. The updated config is already checked in as
+`lab12-dm-updated.deployment.yaml` — it adds a `lab12-dm-bucket-logs` NEARLINE bucket alongside
+the original resources:
 
 ```bash
-cp lab12-dm.deployment.yaml /tmp/lab12-dm-updated.yaml
-
-cat >> /tmp/lab12-dm-updated.yaml << 'YAMLEOF'
-
-  - name: lab12-dm-bucket-logs
-    type: storage.v1.bucket
-    properties:
-      location: US
-      storageClass: NEARLINE
-      iamConfiguration:
-        uniformBucketLevelAccess:
-          enabled: true
-YAMLEOF
-
 gcloud deployment-manager deployments update lab12-dm-deploy \
-  --config=/tmp/lab12-dm-updated.yaml \
+  --config=lab12-dm-updated.deployment.yaml \
   --project="${PROJECT_ID}"
 ```
 
 Expected output:
 ```
-Waiting for update [operation-...]...done.
+The fingerprint of the deployment is b'...'
+Waiting for update [operation-...]...
+done.
 Update operation operation-... completed successfully.
-NAME                   LAST_OPERATION_TYPE  STATUS  DESCRIPTION
-lab12-dm-deploy        update               DONE
+NAME                  TYPE               STATE      ERRORS  INTENT
+lab12-dm-bucket       storage.v1.bucket  COMPLETED  []
+lab12-dm-bucket-logs  storage.v1.bucket  COMPLETED  []
+lab12-dm-topic        pubsub.v1.topic    COMPLETED  []
 ```
 
 Verify the new bucket was added:
@@ -1520,15 +1514,15 @@ Verify the new bucket was added:
 gcloud deployment-manager resources list \
   --deployment=lab12-dm-deploy \
   --project="${PROJECT_ID}" \
-  --format="table(name,type,state)"
+  --format="table(name,type)"
 ```
 
 Expected output:
 ```
-NAME                    TYPE               STATE
-lab12-dm-bucket         storage.v1.bucket  IN_USE
-lab12-dm-bucket-logs    storage.v1.bucket  IN_USE
-lab12-dm-topic          pubsub.v1.topic    IN_USE
+NAME                  TYPE
+lab12-dm-bucket       storage.v1.bucket
+lab12-dm-bucket-logs  storage.v1.bucket
+lab12-dm-topic        pubsub.v1.topic
 ```
 
 Now delete the entire deployment — Deployment Manager deletes all the resources it created
